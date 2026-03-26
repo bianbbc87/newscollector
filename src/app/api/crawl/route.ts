@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase';
-import { crawlHackerNews, crawlRSS, crawlGitHub, crawlDevpost } from '@/lib/crawlers';
+import { crawlHackerNews, crawlRSS, crawlGitHub, crawlDevpost, crawlPrograms } from '@/lib/crawlers';
 
 // RSS feed sources to crawl - comprehensive list including major tech blogs and engineering blogs
 const RSS_SOURCES = [
@@ -31,6 +31,9 @@ const RSS_SOURCES = [
   { name: 'devto_devops', url: 'https://dev.to/feed/tag/devops' },
   { name: 'devto_sre', url: 'https://dev.to/feed/tag/sre' },
   { name: 'google_opensource', url: 'https://opensource.googleblog.com/feeds/posts/default' },
+
+  // Linux Foundation Events
+  { name: 'lf_events', url: 'https://events.linuxfoundation.org/feed/' },
 ];
 
 export async function POST(request: NextRequest) {
@@ -86,6 +89,15 @@ export async function POST(request: NextRequest) {
       } catch (e) {
         console.error('Devpost crawl failed:', e);
         results.devpost = 0;
+      }
+    }
+
+    if (!source || source === 'programs') {
+      try {
+        results.programs = await crawlPrograms();
+      } catch (e) {
+        console.error('Programs crawl failed:', e);
+        results.programs = 0;
       }
     }
 
