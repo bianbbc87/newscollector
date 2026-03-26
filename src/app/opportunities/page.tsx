@@ -40,14 +40,14 @@ export default function OpportunitiesPage() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchOpportunities();
-  }, []);
-
-  const fetchOpportunities = async () => {
+  const fetchOpportunities = async (type?: string | null, search?: string) => {
     try {
       setLoading(true);
-      const response = await fetch('/api/opportunities?limit=100&sort=relevance');
+      const params = new URLSearchParams({ limit: '200', sort: 'relevance' });
+      if (type) params.set('type', type);
+      if (search) params.set('search', search);
+
+      const response = await fetch(`/api/opportunities?${params}`);
       if (response.ok) {
         const data = await response.json();
         const normalized = (data.data || []).map((opp: any) => ({
@@ -67,6 +67,18 @@ export default function OpportunitiesPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchOpportunities(selectedType, searchTerm);
+  }, [selectedType]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchOpportunities(selectedType, searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Extract all unique tags
   const allTags = useMemo(() => {
