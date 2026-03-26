@@ -1,4 +1,5 @@
 import { getServiceSupabase } from '@/lib/supabase';
+import { calculateRelevanceScore, extractSmartTags } from '@/lib/scoring';
 
 interface HNItem {
   id: number;
@@ -18,7 +19,7 @@ const DEVOPS_KEYWORDS = [
   'docker', 'aws', 'gcp', 'azure', 'terraform', 'ansible', 'ci/cd',
   'deployment', 'monitoring', 'observability', 'cloud', 'platform engineer',
   'ebpf', 'envoy', 'prometheus', 'grafana', 'linux', 'container',
-  'orchestration', 'deployment', 'opsops', 'cloud-native', 'microservices',
+  'orchestration', 'cloud-native', 'microservices',
   'distributed systems', 'scalability', 'reliability', 'performance',
 ];
 
@@ -41,7 +42,7 @@ export async function crawlHackerNews(): Promise<number> {
   const supabase = getServiceSupabase();
   const rows: Record<string, unknown>[] = [];
 
-  // 1. Fetch job stories (increased from 25 to 50)
+  // 1. Fetch job stories
   const jobRes = await fetch(`${HN_API_BASE}/jobstories.json`);
   if (!jobRes.ok) throw new Error('Failed to fetch HN job stories');
   const jobIds: number[] = await jobRes.json();
@@ -50,7 +51,7 @@ export async function crawlHackerNews(): Promise<number> {
   const topRes = await fetch(`${HN_API_BASE}/topstories.json`);
   const topIds: number[] = topRes.ok ? await topRes.json() : [];
 
-  // 3. Fetch all stories to search for "Ask HN: Who is Hiring?" monthly threads
+  // 3. Fetch new stories to search for "Ask HN: Who is Hiring?" monthly threads
   const allRes = await fetch(`${HN_API_BASE}/newstories.json`);
   const allIds: number[] = allRes.ok ? await allRes.json() : [];
 
@@ -59,19 +60,23 @@ export async function crawlHackerNews(): Promise<number> {
     const item = await fetchHNItem(id);
     if (!item || !item.title) continue;
 
+    const desc = (item.text || '').slice(0, 2000);
+    const score = calculateRelevanceScore(item.title, desc, 'hackernews', 'job');
+    const tags = extractSmartTags(item.title, desc, ['job', 'hacker-news']);
+
     rows.push({
       type: 'job',
       title: item.title,
       organization: item.by || 'Hacker News',
       url: item.url || `https://news.ycombinator.com/item?id=${item.id}`,
-      description: (item.text || '').slice(0, 2000),
+      description: desc,
       location: 'global',
-      tags: ['job', 'hacker-news'],
+      tags,
       eligibility: 'anyone',
       status: 'active',
       source_url: `https://news.ycombinator.com/item?id=${item.id}`,
       crawl_depth: 0,
-      relevance_score: 0.85,
+      relevance_score: score,
       raw_data: { hn_id: item.id, score: item.score, by: item.by, type: 'job' },
     });
 
@@ -86,19 +91,23 @@ export async function crawlHackerNews(): Promise<number> {
     const isDevOps = isDevOpsRelated(item.title, item.text || '');
     if (!isDevOps) continue;
 
+    const desc = (item.text || '').slice(0, 2000);
+    const score = calculateRelevanceScore(item.title, desc, 'hackernews', 'trend');
+    const tags = extractSmartTags(item.title, desc, ['trend', 'devops', 'sre']);
+
     rows.push({
       type: 'trend',
       title: item.title,
       organization: 'Hacker News',
       url: item.url || `https://news.ycombinator.com/item?id=${item.id}`,
-      description: (item.text || '').slice(0, 2000),
+      description: desc,
       location: 'global',
-      tags: ['trend', 'devops', 'sre'],
+      tags,
       eligibility: 'anyone',
       status: 'active',
       source_url: `https://news.ycombinator.com/item?id=${item.id}`,
       crawl_depth: 0,
-      relevance_score: 0.75,
+      relevance_score: score,
       raw_data: { hn_id: item.id, score: item.score, by: item.by, type: 'trend' },
     });
 
@@ -111,19 +120,23 @@ export async function crawlHackerNews(): Promise<number> {
     if (!item || !item.title) continue;
 
     if (item.title.toLowerCase().includes('ask hn: who is hiring')) {
+      const desc = (item.text || 'Monthly "Who is Hiring?" thread from Hacker News.').slice(0, 2000);
+      const score = calculateRelevanceScore(item.title, desc, 'hackernews', 'job');
+      const tags = extractSmartTags(item.title, desc, ['job', 'hiring', 'hacker-news']);
+
       rows.push({
         type: 'job',
         title: item.title,
         organization: 'Hacker News Community',
         url: `https://news.ycombinator.com/item?id=${item.id}`,
-        description: (item.text || 'Monthly "Who is Hiring?" thread from Hacker News. Post or browse job opportunities.').slice(0, 2000),
+        description: desc,
         location: 'global',
-        tags: ['job', 'hiring', 'hacker-news'],
+        tags,
         eligibility: 'anyone',
         status: 'active',
         source_url: `https://news.ycombinator.com/item?id=${item.id}`,
         crawl_depth: 0,
-        relevance_score: 0.8,
+        relevance_score: score,
         raw_data: { hn_id: item.id, score: item.score, by: item.by, type: 'hiring_thread' },
       });
     }
@@ -132,7 +145,6 @@ export async function crawlHackerNews(): Promise<number> {
   }
 
   if (rows.length > 0) {
-    // Upsert to avoid duplicates - use url as unique key
     let inserted = 0;
     for (const row of rows) {
       const { data: existing } = await supabase

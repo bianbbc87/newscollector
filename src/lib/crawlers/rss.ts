@@ -1,5 +1,6 @@
 import Parser from 'rss-parser';
 import { getServiceSupabase } from '@/lib/supabase';
+import { calculateRelevanceScore, extractSmartTags } from '@/lib/scoring';
 
 const parser = new Parser({
   customFields: {
@@ -33,15 +34,19 @@ export async function crawlRSS(sourceName: string, feedUrl: string): Promise<num
         if (sourceName.includes('job') || sourceName.includes('career')) type = 'job';
         if (sourceName.includes('hackathon')) type = 'hackathon';
 
-        // Basic tag extraction from title + categories
-        const tags: string[] = [];
+        // Extract categories from RSS
+        const baseTags: string[] = [];
         const categories = entry.categories || [];
         if (Array.isArray(categories)) {
           categories.forEach((c: any) => {
             const tagStr = typeof c === 'string' ? c : (c.name || c);
-            if (tagStr) tags.push(tagStr.toLowerCase());
+            if (tagStr) baseTags.push(tagStr.toLowerCase());
           });
         }
+
+        // Smart scoring and tagging
+        const score = calculateRelevanceScore(entry.title, description, sourceName, type);
+        const tags = extractSmartTags(entry.title, description, baseTags.slice(0, 5));
 
         rows.push({
           type,
@@ -50,12 +55,12 @@ export async function crawlRSS(sourceName: string, feedUrl: string): Promise<num
           url: entry.link,
           description,
           location: 'global',
-          tags: tags.slice(0, 10),
+          tags: tags.slice(0, 12),
           eligibility: 'anyone',
           status: 'active',
           source_url: feedUrl,
           crawl_depth: 0,
-          relevance_score: 0.6,
+          relevance_score: score,
           raw_data: {
             source: sourceName,
             author: entry.creator || (entry as unknown as Record<string, unknown>).author || null,
