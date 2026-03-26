@@ -1,0 +1,49 @@
+name: NewsCollector Crawl Pipeline
+
+on:
+  schedule:
+    # Every 2 hours for high-priority sources
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Specific source to crawl (leave empty for all)'
+        required: false
+        default: ''
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Trigger Crawl
+        run: |
+          SOURCE="${{ github.event.inputs.source }}"
+          BODY="{}"
+          if [ -n "$SOURCE" ]; then
+            BODY="{\"source\": \"$SOURCE\"}"
+          fi
+
+          curl -s -X POST "${{ secrets.APP_URL }}/api/crawl" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -d "$BODY"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Run daily at 3 AM KST (18:00 UTC)
+    if: github.event.schedule == '0 18 * * *' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: URL Health Check
+        run: |
+          curl -s -X POST "${{ secrets.APP_URL }}/api/crawl" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -d '{"action": "health_check"}'
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
