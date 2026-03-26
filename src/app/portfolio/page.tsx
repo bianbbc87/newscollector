@@ -258,31 +258,116 @@ export default function PortfolioPage() {
     );
   }
 
-  // AI Suggestion Mock Functions
-  const showAISuggestion = (type: string) => {
-    const suggestions: Record<string, string> = {
-      bio: '전문 용어와 경험 기간을 강조하면 더 좋아요. "15년 이상의 경험"과 같이 구체적인 숫자를 포함하세요.',
-      experience:
-        '프로젝트의 영향도를 더 명확히 하세요. "비용 35% 절감"처럼 양적인 결과를 강조하면 채용담당자들에게 더 어필됩니다.',
-      projects:
-        '사용자 수나 일일 활동량 같은 메트릭을 추가하세요. "월 10만+ 사용자 서빙" 같은 스케일 정보가 있으면 더욱 임팩트 있습니다.',
-      skills: '당신의 기술 스택은 좋지만 클라우드 보안(Cloud Security) 관련 기술을 추가하면 시니어 역할에 더 경쟁력이 있을 거예요.',
-      score: '포트폴리오 점수: 82/100. 개선 사항: Open Source 기여, 블로그 글 작성, 아키텍처 다이어그램 추가',
-    };
-    setActiveSuggestion(type);
-    setAiSuggestion(suggestions[type] || 'AI 제안을 생성 중입니다...');
-  };
-
-  const scoreChecklist = [
-    { item: 'System Design 경험 시연', checked: true },
+  // AI state
+  const [aiLoading, setAiLoading] = useState(false);
+  const [portfolioScore, setPortfolioScore] = useState<number | null>(null);
+  const [scoreSummary, setScoreSummary] = useState<string>('');
+  const [scoreChecklist, setScoreChecklist] = useState<Array<{ item: string; checked: boolean }>>([
+    { item: 'System Design 경험 시연', checked: false },
     { item: 'Open Source 기여', checked: false },
-    { item: '프로젝트 설명에 영향도 메트릭 포함', checked: true },
-    { item: '정량화된 성과', checked: true },
+    { item: '프로젝트 설명에 영향도 메트릭 포함', checked: false },
+    { item: '정량화된 성과', checked: false },
     { item: '기술 블로그', checked: false },
     { item: '컨퍼런스 발표 경험', checked: false },
-    { item: '안정성 개선 사례', checked: true },
-    { item: '비용 최적화 사례', checked: true },
-  ];
+    { item: '안정성 개선 사례', checked: false },
+    { item: '비용 최적화 사례', checked: false },
+  ]);
+
+  // Build portfolio data for API calls
+  const getPortfolioData = useCallback(() => ({
+    name: profile.name,
+    title: profile.title,
+    bio: profile.bio,
+    experiences,
+    projects,
+    skills,
+    certifications,
+  }), [profile, experiences, projects, skills, certifications]);
+
+  // Real AI: Improve a specific section
+  const showAISuggestion = async (type: string) => {
+    if (!user) return;
+    setActiveSuggestion(type);
+    setAiLoading(true);
+    setAiSuggestion('AI가 분석 중입니다...');
+
+    try {
+      if (type === 'score') {
+        // Full portfolio analysis
+        const res = await fetch('/api/ai/coach', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'analyze',
+            userId: user.id,
+            portfolio: getPortfolioData(),
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setPortfolioScore(data.score);
+          setScoreSummary(data.summary);
+          if (data.checklist && data.checklist.length > 0) {
+            setScoreChecklist(data.checklist);
+          }
+          const feedback = [
+            ...(data.strengths || []).map((s: string) => `✅ ${s}`),
+            ...(data.improvements || []).map((s: string) => `💡 ${s}`),
+          ].join('\n');
+          setAiSuggestion(feedback || data.summary);
+        } else {
+          setAiSuggestion(data.error || '분석에 실패했습니다.');
+        }
+      } else if (type === 'skills') {
+        // Skill gap analysis
+        const res = await fetch('/api/ai/coach', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'skillgap',
+            userId: user.id,
+            portfolio: getPortfolioData(),
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          const parts: string[] = [];
+          if (data.missingSkills?.length > 0) parts.push(`부족한 스킬: ${data.missingSkills.join(', ')}`);
+          if (data.trendingSkills?.length > 0) parts.push(`트렌딩 스킬: ${data.trendingSkills.join(', ')}`);
+          if (data.recommendations?.length > 0) parts.push(`\n추천:\n${data.recommendations.map((r: string) => `• ${r}`).join('\n')}`);
+          setAiSuggestion(parts.join('\n') || '분석 결과가 없습니다.');
+        } else {
+          setAiSuggestion(data.error || '스킬 갭 분석에 실패했습니다.');
+        }
+      } else {
+        // Section-specific improvement
+        const sectionContentMap: Record<string, string> = {
+          bio: profile.bio,
+          experience: experiences.map(e => `${e.role} @ ${e.company}: ${e.description}`).join('\n'),
+          projects: projects.map(p => `${p.title}: ${p.description}`).join('\n'),
+        };
+
+        const res = await fetch('/api/ai/coach', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'improve',
+            userId: user.id,
+            sectionType: type,
+            sectionContent: sectionContentMap[type] || '',
+            portfolio: getPortfolioData(),
+          }),
+        });
+        const data = await res.json();
+        setAiSuggestion(data.suggestion || data.error || '제안을 생성하지 못했습니다.');
+      }
+    } catch (err) {
+      console.error('AI suggestion error:', err);
+      setAiSuggestion('AI 서비스에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const getLevelColor = (level: string) => {
     switch (level) {
@@ -437,7 +522,8 @@ export default function PortfolioPage() {
               />
               {activeSuggestion === 'bio' && aiSuggestion && (
                 <div className="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                  <p className="text-sm text-indigo-800">💡 {aiSuggestion}</p>
+                  {aiLoading && <Loader2 size={14} className="animate-spin text-indigo-600 inline mr-2" />}
+                  <p className="text-sm text-indigo-800 whitespace-pre-wrap">💡 {aiSuggestion}</p>
                 </div>
               )}
             </div>
@@ -498,7 +584,8 @@ export default function PortfolioPage() {
 
               {activeSuggestion === 'experience' && aiSuggestion && (
                 <div className="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                  <p className="text-sm text-indigo-800">💡 {aiSuggestion}</p>
+                  {aiLoading && <Loader2 size={14} className="animate-spin text-indigo-600 inline mr-2" />}
+                  <p className="text-sm text-indigo-800 whitespace-pre-wrap">💡 {aiSuggestion}</p>
                 </div>
               )}
             </div>
@@ -590,7 +677,8 @@ export default function PortfolioPage() {
 
               {activeSuggestion === 'projects' && aiSuggestion && (
                 <div className="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                  <p className="text-sm text-indigo-800">💡 {aiSuggestion}</p>
+                  {aiLoading && <Loader2 size={14} className="animate-spin text-indigo-600 inline mr-2" />}
+                  <p className="text-sm text-indigo-800 whitespace-pre-wrap">💡 {aiSuggestion}</p>
                 </div>
               )}
             </div>
@@ -659,7 +747,8 @@ export default function PortfolioPage() {
 
               {activeSuggestion === 'skills' && aiSuggestion && (
                 <div className="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                  <p className="text-sm text-indigo-800">💡 {aiSuggestion}</p>
+                  {aiLoading && <Loader2 size={14} className="animate-spin text-indigo-600 inline mr-2" />}
+                  <p className="text-sm text-indigo-800 whitespace-pre-wrap">💡 {aiSuggestion}</p>
                 </div>
               )}
             </div>
@@ -700,12 +789,15 @@ export default function PortfolioPage() {
               <div className="mb-6 bg-white rounded-lg p-4 border border-indigo-100">
                 <p className="text-xs text-gray-600 mb-2">포트폴리오 점수</p>
                 <div className="flex items-baseline gap-2 mb-3">
-                  <p className="text-4xl font-bold text-indigo-600">82</p>
+                  <p className="text-4xl font-bold text-indigo-600">{portfolioScore ?? '—'}</p>
                   <span className="text-gray-600">/100</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-indigo-600 h-2 rounded-full" style={{ width: '82%' }} />
+                  <div className="bg-indigo-600 h-2 rounded-full transition-all duration-500" style={{ width: `${portfolioScore ?? 0}%` }} />
                 </div>
+                {scoreSummary && (
+                  <p className="mt-2 text-xs text-gray-600">{scoreSummary}</p>
+                )}
                 <button
                   onClick={() => showAISuggestion('score')}
                   className="mt-3 w-full px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
