@@ -94,7 +94,7 @@ export default function PortfolioPage() {
   const { user, loading: authLoading, signIn } = useAuth();
   const router = useRouter();
 
-  // States
+  // States - ALL hooks must be at the top, before any conditional returns
   const [profile, setProfile] = useState<Profile>(emptyProfile);
   const [experiences, setExperiences] = useState<ExperienceEntry[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -109,6 +109,21 @@ export default function PortfolioPage() {
   const [dataLoading, setDataLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  // AI state (must be here, not after conditional returns)
+  const [aiLoading, setAiLoading] = useState(false);
+  const [portfolioScore, setPortfolioScore] = useState<number | null>(null);
+  const [scoreSummary, setScoreSummary] = useState<string>('');
+  const [scoreChecklist, setScoreChecklist] = useState<Array<{ item: string; checked: boolean }>>([
+    { item: 'System Design 경험 시연', checked: false },
+    { item: 'Open Source 기여', checked: false },
+    { item: '프로젝트 설명에 영향도 메트릭 포함', checked: false },
+    { item: '정량화된 성과', checked: false },
+    { item: '기술 블로그', checked: false },
+    { item: '컨퍼런스 발표 경험', checked: false },
+    { item: '안정성 개선 사례', checked: false },
+    { item: '비용 최적화 사례', checked: false },
+  ]);
 
   // Load portfolio data from Supabase
   const loadPortfolio = useCallback(async () => {
@@ -257,21 +272,6 @@ export default function PortfolioPage() {
       </div>
     );
   }
-
-  // AI state
-  const [aiLoading, setAiLoading] = useState(false);
-  const [portfolioScore, setPortfolioScore] = useState<number | null>(null);
-  const [scoreSummary, setScoreSummary] = useState<string>('');
-  const [scoreChecklist, setScoreChecklist] = useState<Array<{ item: string; checked: boolean }>>([
-    { item: 'System Design 경험 시연', checked: false },
-    { item: 'Open Source 기여', checked: false },
-    { item: '프로젝트 설명에 영향도 메트릭 포함', checked: false },
-    { item: '정량화된 성과', checked: false },
-    { item: '기술 블로그', checked: false },
-    { item: '컨퍼런스 발표 경험', checked: false },
-    { item: '안정성 개선 사례', checked: false },
-    { item: '비용 최적화 사례', checked: false },
-  ]);
 
   // Build portfolio data for API calls
   const getPortfolioData = () => ({
