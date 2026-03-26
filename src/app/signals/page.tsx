@@ -90,28 +90,28 @@ export default function SignalsPage() {
     switch (trend) {
       case 'spike':
         return (
-          <div className="flex items-center gap-1 text-red-400">
+          <div className="flex items-center gap-1 text-red-600">
             <Zap size={16} />
             <span className="text-sm font-semibold">+{trendValue}%</span>
           </div>
         );
       case 'up':
         return (
-          <div className="flex items-center gap-1 text-green-400">
+          <div className="flex items-center gap-1 text-green-600">
             <TrendingUp size={16} />
             <span className="text-sm font-semibold">+{trendValue}%</span>
           </div>
         );
       case 'down':
         return (
-          <div className="flex items-center gap-1 text-red-400">
+          <div className="flex items-center gap-1 text-red-600">
             <TrendingDown size={16} />
             <span className="text-sm font-semibold">{trendValue}%</span>
           </div>
         );
       case 'stable':
         return (
-          <div className="flex items-center gap-1 text-gray-400">
+          <div className="flex items-center gap-1 text-gray-500">
             <Minus size={16} />
             <span className="text-sm font-semibold">보합</span>
           </div>
@@ -128,33 +128,33 @@ export default function SignalsPage() {
       case 'up':
         return 'bg-gradient-to-r from-green-600 to-green-500';
       case 'down':
-        return 'bg-gradient-to-r from-red-700 to-red-600';
+        return 'bg-gradient-to-r from-red-500 to-red-400';
       case 'stable':
-        return 'bg-gradient-to-r from-gray-600 to-gray-500';
+        return 'bg-gradient-to-r from-gray-400 to-gray-300';
       default:
-        return 'bg-gray-600';
+        return 'bg-indigo-600';
     }
   };
 
   return (
-    <div className="p-8">
+    <div className="p-6 md:p-8 pb-32 md:pb-8">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="section-title mb-2">신호</h1>
-        <p className="text-gray-400">DevOps/SRE 분야의 주요 키워드 및 트렌드</p>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">신호</h1>
+        <p className="text-gray-500">DevOps/SRE 분야의 주요 키워드 및 트렌드</p>
       </div>
 
       {/* Period Filter */}
-      <div className="mb-6 flex flex-wrap gap-2">
-        <span className="text-sm text-gray-400 flex items-center">기간:</span>
+      <div className="mb-8 flex flex-wrap gap-2">
+        <span className="text-sm text-gray-500 flex items-center">기간:</span>
         {periodOptions.map((opt) => (
           <button
             key={opt.value}
             onClick={() => setPeriod(opt.value)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
               period === opt.value
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             {opt.label}
@@ -163,36 +163,36 @@ export default function SignalsPage() {
       </div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="card">
-          <p className="text-gray-400 text-sm mb-1">상승 키워드</p>
-          <p className="text-2xl font-bold text-green-400">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+          <p className="text-gray-500 text-sm mb-2">상승 키워드</p>
+          <p className="text-2xl font-bold text-green-600">
             {signals.filter((s) => s.trend === 'up' || s.trend === 'spike').length}
           </p>
         </div>
-        <div className="card">
-          <p className="text-gray-400 text-sm mb-1">총 언급 수</p>
-          <p className="text-2xl font-bold text-blue-400">
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+          <p className="text-gray-500 text-sm mb-2">총 언급 수</p>
+          <p className="text-2xl font-bold text-indigo-600">
             {signals.reduce((sum, s) => sum + s.mentionCount, 0)}
           </p>
         </div>
-        <div className="card">
-          <p className="text-gray-400 text-sm mb-1">추적 중인 키워드</p>
-          <p className="text-2xl font-bold text-purple-400">{signals.length}</p>
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+          <p className="text-gray-500 text-sm mb-2">추적 중인 키워드</p>
+          <p className="text-2xl font-bold text-purple-600">{signals.length}</p>
         </div>
       </div>
 
       {/* Signals List */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {sortedSignals.map((signal) => {
           const barWidth = (signal.mentionCount / maxMentions) * 100;
 
           return (
-            <div key={signal.keyword} className="card">
-              <div className="flex items-center justify-between gap-4 mb-3">
+            <div key={signal.keyword} className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+              <div className="flex items-center justify-between gap-4 mb-4">
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-white text-lg">{signal.keyword}</h3>
-                  <p className="text-sm text-gray-400">
+                  <h3 className="font-semibold text-gray-900 text-lg">{signal.keyword}</h3>
+                  <p className="text-sm text-gray-500">
                     {signal.mentionCount}개의 언급
                   </p>
                 </div>
@@ -203,7 +203,7 @@ export default function SignalsPage() {
               </div>
 
               {/* Bar Chart */}
-              <div className="w-full bg-gray-800 rounded-full h-8 overflow-hidden">
+              <div className="w-full bg-gray-200 rounded-full h-8 overflow-hidden">
                 <div
                   className={`h-full ${getTrendColor(signal.trend)} transition-all duration-500 flex items-center justify-end pr-3`}
                   style={{ width: `${barWidth}%` }}
@@ -216,14 +216,14 @@ export default function SignalsPage() {
 
               {/* Change Info */}
               {signal.previousCount !== undefined && (
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-xs text-gray-500">이전 기간:</span>
-                  <span className="text-xs text-gray-400">{signal.previousCount}개</span>
+                <div className="flex items-center gap-2 mt-3">
+                  <span className="text-xs text-gray-400">이전 기간:</span>
+                  <span className="text-xs text-gray-500">{signal.previousCount}개</span>
                   <span className={`text-xs font-semibold ${
                     signal.trend === 'up' || signal.trend === 'spike'
-                      ? 'text-green-400'
+                      ? 'text-green-600'
                       : signal.trend === 'down'
-                      ? 'text-red-400'
+                      ? 'text-red-600'
                       : 'text-gray-500'
                   }`}>
                     {signal.trend === 'spike' || signal.trend === 'up'
@@ -241,9 +241,9 @@ export default function SignalsPage() {
       </div>
 
       {/* Insights */}
-      <div className="mt-8 card border-l-4 border-l-blue-500">
-        <h3 className="font-semibold text-white mb-2">인사이트</h3>
-        <ul className="space-y-2 text-sm text-gray-300">
+      <div className="mt-8 bg-white rounded-lg border border-indigo-200 border-l-4 border-l-indigo-600 shadow-sm p-6">
+        <h3 className="font-semibold text-gray-900 mb-3">인사이트</h3>
+        <ul className="space-y-2 text-sm text-gray-600">
           <li>• eBPF와 ArgoCD가 급상승하고 있습니다 - 최신 기술을 학습할 좋은 기회입니다</li>
           <li>
             • GitOps와 Observability는 계속 상승 추세입니다 - 관련 기술 습득이 추천됩니다

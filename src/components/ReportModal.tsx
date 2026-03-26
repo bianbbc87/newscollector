@@ -75,84 +75,86 @@ export default function ReportModal({ isOpen, onClose, opportunityId }: ReportMo
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="card w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-800">
-          <h2 className="text-lg font-bold text-white">기회 신고</h2>
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200 px-6 pt-6">
+          <h2 className="text-lg font-bold text-gray-900">기회 신고</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-300 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors"
           >
             <X size={20} />
           </button>
         </div>
 
-        {!submitted ? (
-          <>
-            {/* Report Type Selection */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-300 mb-3">
-                신고 유형을 선택하세요
-              </label>
-              <div className="space-y-2">
-                {reportTypes.map((type) => (
-                  <button
-                    key={type.id}
-                    onClick={() => setSelectedType(type.id)}
-                    className={`w-full text-left p-3 rounded-lg border transition-all duration-200 ${
-                      selectedType === type.id
-                        ? 'bg-blue-900 border-blue-600'
-                        : 'bg-gray-800 border-gray-700 hover:border-gray-600'
-                    }`}
-                  >
-                    <div className="font-medium text-white">{type.label}</div>
-                    <div className="text-xs text-gray-400 mt-1">{type.description}</div>
-                  </button>
-                ))}
+        <div className="px-6 pb-6">
+          {!submitted ? (
+            <>
+              {/* Report Type Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-900 mb-3">
+                  신고 유형을 선택하세요
+                </label>
+                <div className="space-y-2">
+                  {reportTypes.map((type) => (
+                    <button
+                      key={type.id}
+                      onClick={() => setSelectedType(type.id)}
+                      className={`w-full text-left p-3 rounded-lg border transition-all duration-200 ${
+                        selectedType === type.id
+                          ? 'bg-indigo-50 border-indigo-200'
+                          : 'bg-white border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className={`font-medium ${selectedType === type.id ? 'text-indigo-700' : 'text-gray-900'}`}>{type.label}</div>
+                      <div className={`text-xs mt-1 ${selectedType === type.id ? 'text-indigo-600' : 'text-gray-500'}`}>{type.description}</div>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Details Input */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-300 mb-2">
-                추가 정보 (선택사항)
-              </label>
-              <textarea
-                value={details}
-                onChange={(e) => setDetails(e.target.value)}
-                placeholder="추가 세부사항을 입력하세요..."
-                className="input-field resize-none h-24"
-              />
-            </div>
+              {/* Details Input */}
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  추가 정보 (선택사항)
+                </label>
+                <textarea
+                  value={details}
+                  onChange={(e) => setDetails(e.target.value)}
+                  placeholder="추가 세부사항을 입력하세요..."
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-900 placeholder-gray-400 resize-none h-24 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <button onClick={onClose} className="flex-1 button-secondary">
-                취소
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={!selectedType}
-                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
-                  selectedType
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                신고하기
-              </button>
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <button onClick={onClose} className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors font-medium">
+                  취소
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={!selectedType}
+                  className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+                    selectedType
+                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                      : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  신고하기
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-8">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="text-green-600 text-xl">✓</span>
+              </div>
+              <p className="text-gray-900 font-semibold">신고가 접수되었습니다</p>
+              <p className="text-sm text-gray-500 mt-2">감사합니다. 검토 후 조치하겠습니다.</p>
             </div>
-          </>
-        ) : (
-          <div className="text-center py-8">
-            <div className="w-12 h-12 bg-green-900 rounded-full flex items-center justify-center mx-auto mb-3">
-              <span className="text-green-300 text-xl">✓</span>
-            </div>
-            <p className="text-white font-semibold">신고가 접수되었습니다</p>
-            <p className="text-sm text-gray-400 mt-2">감사합니다. 검토 후 조치하겠습니다.</p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

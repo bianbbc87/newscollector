@@ -221,25 +221,25 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="p-8">
+    <div className="p-6 md:p-8 pb-32 md:pb-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="section-title mb-2">대시보드</h1>
-        <p className="text-gray-400">당신의 경력 개발 기회를 한눈에 파악하세요</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">대시보드</h1>
+        <p className="text-gray-500">당신의 경력 개발 기회를 한눈에 파악하세요</p>
       </div>
 
       {/* Stats Grid */}
       {!loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {statCards.map((stat, idx) => (
-            <div key={idx} className="card border-0">
-              <div className="flex items-start justify-between mb-3">
+            <div key={idx} className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+              <div className="flex items-start justify-between mb-4">
                 <div className={`p-3 rounded-lg bg-gradient-to-br ${stat.color} text-white`}>
                   {stat.icon}
                 </div>
               </div>
-              <p className="text-gray-400 text-sm font-medium mb-1">{stat.label}</p>
-              <p className="text-3xl font-bold text-white">{stat.value}</p>
+              <p className="text-gray-500 text-sm font-medium mb-2">{stat.label}</p>
+              <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
             </div>
           ))}
         </div>
@@ -249,21 +249,21 @@ export default function Dashboard() {
       {loading && (
         <div className="text-center py-12">
           <div className="inline-block">
-            <div className="animate-spin rounded-full h-8 w-8 border border-gray-700 border-t-blue-500"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border border-gray-300 border-t-indigo-600"></div>
           </div>
-          <p className="text-gray-400 mt-3">데이터를 불러오는 중...</p>
+          <p className="text-gray-500 mt-3">데이터를 불러오는 중...</p>
         </div>
       )}
 
       {/* Recent Opportunities */}
       {!loading && (
         <div>
-          <div className="mb-4">
-            <h2 className="subsection-title">최신 기회</h2>
-            <p className="text-sm text-gray-400">관련성 순</p>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">최신 기회</h2>
+            <p className="text-sm text-gray-500">관련성 순</p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {opportunities.slice(0, 10).map((opp) => (
               <OpportunityCard
                 key={opp.id}

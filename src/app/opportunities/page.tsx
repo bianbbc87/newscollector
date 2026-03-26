@@ -215,38 +215,38 @@ export default function OpportunitiesPage() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-6 md:p-8 pb-32 md:pb-8">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="section-title mb-2">기회</h1>
-        <p className="text-gray-400">모든 기회를 검색하고 필터링하세요</p>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">기회</h1>
+        <p className="text-gray-500">모든 기회를 검색하고 필터링하세요</p>
       </div>
 
       {/* Filter Bar */}
-      <div className="mb-6 space-y-4">
+      <div className="mb-8 space-y-4 sticky top-0 bg-gray-50 py-4 -mx-6 -mt-4 px-6 md:relative md:bg-transparent md:py-0 md:mx-0 md:mt-0 md:px-0">
         {/* Search */}
         <div className="flex gap-3">
           <div className="flex-1 relative">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder="기회 검색..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field pl-10"
+              className="w-full px-4 py-2 pl-10 rounded-lg border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
         </div>
 
         {/* Type and Tags Filter */}
         <div className="flex flex-wrap gap-2 items-center">
-          <Filter size={18} className="text-gray-500" />
+          <Filter size={18} className="text-gray-400" />
 
           {/* Type Dropdown */}
           <select
             value={selectedType || ''}
             onChange={(e) => setSelectedType(e.target.value || null)}
-            className="input-field w-48 px-3 py-2"
+            className="px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           >
             <option value="">모든 유형</option>
             {Object.entries(typeLabels).map(([key, label]) => (
@@ -263,7 +263,7 @@ export default function OpportunitiesPage() {
                 setSelectedType(null);
                 setSelectedTags([]);
               }}
-              className="text-gray-400 hover:text-gray-300 flex items-center gap-1 text-sm"
+              className="text-gray-500 hover:text-gray-700 flex items-center gap-1 text-sm"
             >
               <X size={16} />
               초기화
@@ -280,8 +280,8 @@ export default function OpportunitiesPage() {
                 onClick={() => toggleTag(tag)}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
                   selectedTags.includes(tag)
-                    ? 'bg-blue-600 text-white border border-blue-500'
-                    : 'bg-gray-800 text-gray-400 border border-gray-700 hover:border-gray-600'
+                    ? 'bg-indigo-600 text-white border border-indigo-500'
+                    : 'bg-gray-100 text-gray-600 border border-gray-300 hover:border-gray-400'
                 }`}
               >
                 {tag}
@@ -292,15 +292,15 @@ export default function OpportunitiesPage() {
       </div>
 
       {/* Results */}
-      <div className="mb-4">
-        <p className="text-sm text-gray-400">
+      <div className="mb-6">
+        <p className="text-sm text-gray-500">
           {filteredOpportunities.length}개 기회 ({opportunities.length}개 중)
         </p>
       </div>
 
       {/* Opportunities List */}
       {filteredOpportunities.length > 0 ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {filteredOpportunities.map((opp) => (
             <OpportunityCard
               key={opp.id}
@@ -314,15 +314,15 @@ export default function OpportunitiesPage() {
           ))}
         </div>
       ) : (
-        <div className="card text-center py-12">
-          <p className="text-gray-400 mb-2">일치하는 기회가 없습니다</p>
+        <div className="bg-white text-center py-12 rounded-lg border border-gray-200 shadow-sm">
+          <p className="text-gray-500 mb-2">일치하는 기회가 없습니다</p>
           <button
             onClick={() => {
               setSearchTerm('');
               setSelectedType(null);
               setSelectedTags([]);
             }}
-            className="text-blue-400 hover:text-blue-300 text-sm"
+            className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
           >
             필터 초기화
           </button>

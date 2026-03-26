@@ -31,13 +31,13 @@ interface OpportunityCardProps {
 }
 
 const typeColors: Record<string, { bg: string; text: string; badge: string }> = {
-  job: { bg: 'bg-blue-900', text: 'text-blue-300', badge: 'bg-blue-600' },
-  hackathon: { bg: 'bg-purple-900', text: 'text-purple-300', badge: 'bg-purple-600' },
-  program: { bg: 'bg-green-900', text: 'text-green-300', badge: 'bg-green-600' },
-  conference: { bg: 'bg-orange-900', text: 'text-orange-300', badge: 'bg-orange-600' },
-  opensource: { bg: 'bg-teal-900', text: 'text-teal-300', badge: 'bg-teal-600' },
-  trend: { bg: 'bg-yellow-900', text: 'text-yellow-300', badge: 'bg-yellow-600' },
-  paper: { bg: 'bg-pink-900', text: 'text-pink-300', badge: 'bg-pink-600' },
+  job: { bg: 'bg-blue-50', text: 'text-blue-700', badge: 'bg-blue-600' },
+  hackathon: { bg: 'bg-purple-50', text: 'text-purple-700', badge: 'bg-purple-600' },
+  program: { bg: 'bg-green-50', text: 'text-green-700', badge: 'bg-green-600' },
+  conference: { bg: 'bg-orange-50', text: 'text-orange-700', badge: 'bg-orange-600' },
+  opensource: { bg: 'bg-teal-50', text: 'text-teal-700', badge: 'bg-teal-600' },
+  trend: { bg: 'bg-yellow-50', text: 'text-yellow-700', badge: 'bg-yellow-600' },
+  paper: { bg: 'bg-pink-50', text: 'text-pink-700', badge: 'bg-pink-600' },
 };
 
 const typeLabels: Record<string, string> = {
@@ -55,9 +55,9 @@ const getDeadlineColor = (deadline: string): { bg: string; text: string } => {
   const deadlineDate = new Date(deadline);
   const daysLeft = Math.floor((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-  if (daysLeft < 3) return { bg: 'bg-red-900', text: 'text-red-300' };
-  if (daysLeft < 7) return { bg: 'bg-yellow-900', text: 'text-yellow-300' };
-  return { bg: 'bg-gray-800', text: 'text-gray-300' };
+  if (daysLeft < 3) return { bg: 'bg-red-100', text: 'text-red-700' };
+  if (daysLeft < 7) return { bg: 'bg-yellow-100', text: 'text-yellow-700' };
+  return { bg: 'bg-gray-100', text: 'text-gray-700' };
 };
 
 const formatDeadline = (deadline: string): string => {
@@ -86,12 +86,12 @@ export default function OpportunityCard({
   const deadlineColor = getDeadlineColor(opportunity.deadline);
 
   return (
-    <div className="card-hover group">
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow group">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <span className={`badge ${colors.badge} text-white`}>
+          <div className="flex items-center gap-2 mb-3">
+            <span className={`badge ${colors.badge} text-white text-xs font-medium px-2 py-1 rounded`}>
               {typeLabels[opportunity.type]}
             </span>
             <span className={`text-xs font-semibold ${deadlineColor.bg} ${deadlineColor.text} px-2 py-1 rounded`}>
@@ -99,15 +99,15 @@ export default function OpportunityCard({
             </span>
           </div>
 
-          <h3 className="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors mb-1">
+          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors mb-1">
             {opportunity.title}
           </h3>
-          <p className="text-sm text-gray-400">{opportunity.organization}</p>
+          <p className="text-sm text-gray-500">{opportunity.organization}</p>
         </div>
 
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="text-gray-500 hover:text-gray-300 transition-colors mt-1"
+          className="text-gray-400 hover:text-gray-600 transition-colors mt-1"
         >
           {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
         </button>
@@ -115,9 +115,9 @@ export default function OpportunityCard({
 
       {/* Tags */}
       {opportunity.tags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-3 mb-3">
+        <div className="flex flex-wrap gap-2 mt-4 mb-4">
           {opportunity.tags.map((tag, idx) => (
-            <span key={idx} className="tag-pill">
+            <span key={idx} className="inline-block bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full font-medium">
               {tag.name}
             </span>
           ))}
@@ -125,14 +125,14 @@ export default function OpportunityCard({
       )}
 
       {/* Relevance Score */}
-      <div className="mt-3 mb-3">
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-xs text-gray-400">관련성</span>
-          <span className="text-sm font-semibold text-blue-400">{Math.round(opportunity.relevanceScore)}%</span>
+      <div className="mt-4 mb-4">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-xs text-gray-500">관련성</span>
+          <span className="text-sm font-semibold text-indigo-600">{Math.round(opportunity.relevanceScore)}%</span>
         </div>
-        <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
+        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-300"
+            className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 transition-all duration-300"
             style={{ width: `${opportunity.relevanceScore}%` }}
           />
         </div>
@@ -140,13 +140,13 @@ export default function OpportunityCard({
 
       {/* Expanded Content */}
       {isExpanded && opportunity.description && (
-        <div className="mt-4 pt-4 border-t border-gray-800">
-          <p className="text-sm text-gray-300 leading-relaxed mb-4">
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <p className="text-sm text-gray-600 leading-relaxed mb-4">
             {opportunity.description}
           </p>
 
           {opportunity.postedAt && (
-            <p className="text-xs text-gray-500 mb-4">
+            <p className="text-xs text-gray-400 mb-4">
               게시됨: {new Date(opportunity.postedAt).toLocaleDateString('ko-KR')}
             </p>
           )}
@@ -156,7 +156,7 @@ export default function OpportunityCard({
             {onBookmark && (
               <button
                 onClick={() => onBookmark(opportunity.id)}
-                className="flex-1 button-secondary flex items-center justify-center gap-2"
+                className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
               >
                 <Bookmark size={16} />
                 <span>북마크</span>
@@ -165,7 +165,7 @@ export default function OpportunityCard({
             {onReportClick && (
               <button
                 onClick={() => onReportClick(opportunity)}
-                className="flex-1 button-secondary flex items-center justify-center gap-2"
+                className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
               >
                 <Flag size={16} />
                 <span>신고</span>
@@ -174,7 +174,7 @@ export default function OpportunityCard({
             {onDismiss && (
               <button
                 onClick={() => onDismiss(opportunity.id)}
-                className="flex-1 button-secondary flex items-center justify-center gap-2"
+                className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
               >
                 <Trash2 size={16} />
                 <span>제거</span>
