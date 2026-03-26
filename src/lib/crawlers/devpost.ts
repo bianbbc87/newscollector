@@ -30,20 +30,16 @@ const DEVPOST_API = 'https://devpost.com/api/hackathons';
  */
 function parseDeadline(dateStr: string): string | null {
   try {
-    // Format: "Mar 02 - Apr 07, 2026" or "Mar 08 - 29, 2026"
     const parts = dateStr.split(' - ');
     if (parts.length !== 2) return null;
 
-    const endPart = parts[1].trim(); // "Apr 07, 2026" or "29, 2026"
+    const endPart = parts[1].trim();
 
-    // Check if end part has month name
     if (/^[A-Z][a-z]{2}\s/.test(endPart)) {
-      // Full format: "Apr 07, 2026"
       const d = new Date(endPart);
       if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
     } else {
-      // Short format: "29, 2026" — use month from start
-      const startMonth = parts[0].trim().split(' ')[0]; // "Mar"
+      const startMonth = parts[0].trim().split(' ')[0];
       const d = new Date(`${startMonth} ${endPart}`);
       if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
     }
@@ -53,10 +49,6 @@ function parseDeadline(dateStr: string): string | null {
   }
 }
 
-/**
- * Strip HTML from prize amount
- * "$<span data-currency-value>10,000</span>" → "$10,000"
- */
 function cleanPrize(raw: string): string {
   return raw.replace(/<[^>]*>/g, '').trim();
 }
@@ -65,25 +57,36 @@ export async function crawlDevpost(): Promise<number> {
   const supabase = getServiceSupabase();
   const rows: Record<string, unknown>[] = [];
 
-  // Fetch multiple pages to get more hackathons
   for (let page = 1; page <= 5; page++) {
     try {
-      const res = await fetch(
-        `${DEVPOST_API}?status[]=open&status[]=upcoming&page=${page}`,
-        {
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'NewsCollector/1.0',
-          },
-        }
-      );
+      const apiUrl = `${DEVPOST_API}?status[]=open&status[]=upcoming&page=${page}`;
+      console.log(`Devpost: fetching page ${page}: ${apiUrl}`);
+
+      const res = await fetch(apiUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
+      });
+
+      console.log(`Devpost: page ${page} status=${res.status}, content-type=${res.headers.get('content-type')}`);
 
       if (!res.ok) {
-        console.error(`Devpost API error (page ${page}): ${res.status}`);
+        const errorBody = await res.text().catch(() => 'no body');
+        console.error(`Devpost API error (page ${page}): status=${res.status}, body=${errorBody.slice(0, 500)}`);
+        break;
+      }
+
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('json')) {
+        const body = await res.text().catch(() => '');
+        console.error(`Devpost: unexpected content-type "${contentType}", body starts with: ${body.slice(0, 200)}`);
         break;
       }
 
       const data: DevpostResponse = await res.json();
+      console.log(`Devpost: page ${page} returned ${data.hackathons?.length || 0} hackathons (total: ${data.meta?.total_count || '?'})`);
+
       if (!data.hackathons || data.hackathons.length === 0) break;
 
       for (const hack of data.hackathons) {
@@ -104,7 +107,6 @@ export async function crawlDevpost(): Promise<number> {
         ].filter(Boolean).join(' ');
 
         const deadline = parseDeadline(hack.submission_period_dates);
-
         const baseTags = ['hackathon', 'devpost', ...themeNames];
         const score = calculateRelevanceScore(hack.title, description, 'devpost', 'hackathon');
         const tags = extractSmartTags(hack.title, description, baseTags);
@@ -134,12 +136,14 @@ export async function crawlDevpost(): Promise<number> {
         });
       }
 
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 500));
     } catch (e) {
-      console.error(`Devpost crawl error (page ${page}):`, e);
+      console.error(`Devpost crawl error (page ${page}):`, e instanceof Error ? e.message : e);
       break;
     }
   }
+
+  console.log(`Devpost: total rows to insert: ${rows.length}`);
 
   if (rows.length > 0) {
     let inserted = 0;
@@ -149,7 +153,10 @@ export async function crawlDevpost(): Promise<number> {
         .select('id')
         .eq('url', row.url as string)
         .limit(1);
-      if (existing && existing.length > 0) continue;
+      if (existing && existing.length > 0) {
+        console.log(`Devpost: skipping duplicate: ${row.title}`);
+        continue;
+      }
       const { error } = await supabase.from('opportunities').insert(row);
       if (error) {
         console.error('Devpost insert error:', error.message);
@@ -157,6 +164,7 @@ export async function crawlDevpost(): Promise<number> {
         inserted++;
       }
     }
+    console.log(`Devpost: inserted ${inserted} new hackathons`);
     return inserted;
   }
 
