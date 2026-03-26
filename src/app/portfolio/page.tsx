@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Plus,
   Edit2,
@@ -16,8 +16,13 @@ import {
   BookOpen,
   CheckCircle,
   AlertCircle,
+  LogIn,
+  Loader2,
+  Save,
 } from 'lucide-react';
 import Image from 'next/image';
+import { useAuth } from '@/components/AuthProvider';
+import { useRouter } from 'next/navigation';
 
 // Types
 interface Profile {
@@ -72,137 +77,186 @@ interface Education {
   period: string;
 }
 
-// Mock Data
-const mockProfile: Profile = {
-  name: '정은지',
-  title: 'DevOps/SRE Engineer',
-  location: 'Seoul, Korea',
-  bio: 'Passionate about building scalable infrastructure and improving system reliability. 5+ years of experience with Kubernetes, Terraform, and cloud-native technologies.',
+// Default empty state
+const emptyProfile: Profile = {
+  name: '',
+  title: '',
+  location: '',
+  bio: '',
   profileImage: null,
-  github: 'https://github.com/eunji',
-  linkedin: 'https://linkedin.com/in/eunji',
-  blog: 'https://blog.example.com',
-  email: 'eunji@example.com',
+  github: '',
+  linkedin: '',
+  blog: '',
+  email: '',
 };
 
-const mockExperience: ExperienceEntry[] = [
-  {
-    id: '1',
-    company: 'Naver',
-    role: 'Senior SRE Engineer',
-    period: '2022 - Present',
-    description:
-      'Led infrastructure optimization reducing cloud costs by 35%. Designed and implemented automated deployment pipeline for 200+ microservices.',
-    techStack: ['Kubernetes', 'Terraform', 'Prometheus', 'ELK Stack'],
-  },
-  {
-    id: '2',
-    company: 'Kakao',
-    role: 'DevOps Engineer',
-    period: '2020 - 2022',
-    description:
-      'Managed 500+ production servers on AWS. Implemented observability solutions reducing incident detection time by 60%.',
-    techStack: ['AWS', 'Docker', 'Jenkins', 'Grafana'],
-  },
-  {
-    id: '3',
-    company: 'LINE',
-    role: 'Systems Engineer',
-    period: '2018 - 2020',
-    description:
-      'Built internal tools for team productivity. Improved system reliability from 99.5% to 99.99% uptime.',
-    techStack: ['Linux', 'Python', 'Nginx', 'PostgreSQL'],
-  },
-];
-
-const mockProjects: Project[] = [
-  {
-    id: '1',
-    title: 'Kubernetes Multi-Cluster Management',
-    description:
-      'Built a unified management platform for multi-cloud Kubernetes clusters with automated scaling and disaster recovery.',
-    techStack: ['Kubernetes', 'Go', 'React', 'PostgreSQL'],
-    githubUrl: 'https://github.com/eunji/k8s-multi-cluster',
-    liveUrl: 'https://k8s-management.example.com',
-    image: null,
-  },
-  {
-    id: '2',
-    title: 'Infrastructure as Code Framework',
-    description:
-      'Developed reusable Terraform modules for provisioning cloud infrastructure, reducing deployment time by 70%.',
-    techStack: ['Terraform', 'AWS', 'Python'],
-    githubUrl: 'https://github.com/eunji/terraform-framework',
-    liveUrl: '',
-    image: null,
-  },
-  {
-    id: '3',
-    title: 'Real-time Monitoring Dashboard',
-    description:
-      'Created comprehensive monitoring dashboard aggregating metrics from Prometheus, providing real-time visibility into system health.',
-    techStack: ['React', 'Prometheus', 'Grafana', 'Node.js'],
-    githubUrl: 'https://github.com/eunji/monitoring-dashboard',
-    liveUrl: 'https://monitoring.example.com',
-    image: null,
-  },
-];
-
-const mockSkills: Skill[] = [
-  // Infrastructure
-  { id: '1', category: 'Infrastructure', name: 'Kubernetes', level: 'Expert' },
-  { id: '2', category: 'Infrastructure', name: 'Docker', level: 'Expert' },
-  { id: '3', category: 'Infrastructure', name: 'Linux', level: 'Advanced' },
-
-  // Cloud
-  { id: '4', category: 'Cloud', name: 'AWS', level: 'Advanced' },
-  { id: '5', category: 'Cloud', name: 'GCP', level: 'Intermediate' },
-  { id: '6', category: 'Cloud', name: 'Azure', level: 'Intermediate' },
-
-  // Tools & Platforms
-  { id: '7', category: 'Tools & Platforms', name: 'Terraform', level: 'Expert' },
-  { id: '8', category: 'Tools & Platforms', name: 'Ansible', level: 'Advanced' },
-  { id: '9', category: 'Tools & Platforms', name: 'Jenkins', level: 'Advanced' },
-
-  // Monitoring
-  { id: '10', category: 'Monitoring', name: 'Prometheus', level: 'Advanced' },
-  { id: '11', category: 'Monitoring', name: 'Grafana', level: 'Advanced' },
-  { id: '12', category: 'Monitoring', name: 'ELK Stack', level: 'Intermediate' },
-
-  // Programming
-  { id: '13', category: 'Programming', name: 'Python', level: 'Advanced' },
-  { id: '14', category: 'Programming', name: 'Go', level: 'Intermediate' },
-  { id: '15', category: 'Programming', name: 'Bash', level: 'Expert' },
-];
-
-const mockCertifications: Certification[] = [
-  { id: '1', title: 'Certified Kubernetes Administrator (CKA)', issuer: 'CNCF', date: '2023' },
-  { id: '2', title: 'AWS Solutions Architect - Associate', issuer: 'AWS', date: '2022' },
-  { id: '3', title: 'HashiCorp Certified: Terraform Associate', issuer: 'HashiCorp', date: '2022' },
-];
-
-const mockEducation: Education[] = [
-  {
-    id: '1',
-    university: 'Seoul National University',
-    degree: 'B.S. in Computer Science',
-    period: '2014 - 2018',
-  },
-];
-
 export default function PortfolioPage() {
+  const { user, loading: authLoading, signIn } = useAuth();
+  const router = useRouter();
+
   // States
-  const [profile, setProfile] = useState<Profile>(mockProfile);
-  const [experiences, setExperiences] = useState<ExperienceEntry[]>(mockExperience);
-  const [projects, setProjects] = useState<Project[]>(mockProjects);
-  const [skills, setSkills] = useState<Skill[]>(mockSkills);
-  const [certifications, setCertifications] = useState<Certification[]>(mockCertifications);
-  const [education, setEducation] = useState<Education[]>(mockEducation);
+  const [profile, setProfile] = useState<Profile>(emptyProfile);
+  const [experiences, setExperiences] = useState<ExperienceEntry[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [certifications, setCertifications] = useState<Certification[]>([]);
+  const [education, setEducation] = useState<Education[]>([]);
 
   const [editingExperienceId, setEditingExperienceId] = useState<string | null>(null);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [activeSuggestion, setActiveSuggestion] = useState<string | null>(null);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  // Load portfolio data from Supabase
+  const loadPortfolio = useCallback(async () => {
+    if (!user) return;
+    setDataLoading(true);
+    try {
+      const res = await fetch(`/api/portfolio?userId=${user.id}`);
+      const data = await res.json();
+      if (data && !data.error) {
+        // Populate from saved data, or use defaults from user metadata
+        setProfile({
+          name: data.name || user.user_metadata?.full_name || user.user_metadata?.name || '',
+          title: data.title || '',
+          location: data.location || '',
+          bio: data.bio || '',
+          profileImage: data.profile_image || user.user_metadata?.avatar_url || null,
+          github: data.github || user.user_metadata?.user_name ? `https://github.com/${user.user_metadata?.user_name}` : '',
+          linkedin: data.linkedin || '',
+          blog: data.blog || '',
+          email: data.email || user.email || '',
+        });
+        setExperiences(data.experiences || []);
+        setProjects(data.projects || []);
+        setSkills(data.skills || []);
+        setCertifications(data.certifications || []);
+        setEducation(data.education || []);
+      } else {
+        // No saved data yet — use GitHub metadata as defaults
+        setProfile({
+          name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+          title: '',
+          location: '',
+          bio: '',
+          profileImage: user.user_metadata?.avatar_url || null,
+          github: user.user_metadata?.user_name ? `https://github.com/${user.user_metadata?.user_name}` : '',
+          linkedin: '',
+          blog: '',
+          email: user.email || '',
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load portfolio:', err);
+    } finally {
+      setDataLoading(false);
+    }
+  }, [user]);
+
+  // Save portfolio data to Supabase
+  const savePortfolio = async () => {
+    if (!user) return;
+    setSaving(true);
+    setSaveMessage(null);
+    try {
+      const res = await fetch('/api/portfolio', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          name: profile.name,
+          title: profile.title,
+          location: profile.location,
+          bio: profile.bio,
+          profile_image: profile.profileImage,
+          github: profile.github,
+          linkedin: profile.linkedin,
+          blog: profile.blog,
+          email: profile.email,
+          experiences,
+          projects,
+          skills,
+          certifications,
+          education,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSaveMessage('저장되었습니다!');
+        setTimeout(() => setSaveMessage(null), 3000);
+      } else {
+        setSaveMessage('저장 실패: ' + (data.error || '알 수 없는 오류'));
+      }
+    } catch (err) {
+      setSaveMessage('저장 중 오류가 발생했습니다.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user && !authLoading) {
+      loadPortfolio();
+    }
+    if (!user && !authLoading) {
+      setDataLoading(false);
+    }
+  }, [user, authLoading, loadPortfolio]);
+
+  // Auth loading state
+  if (authLoading) {
+    return (
+      <div className="bg-white min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 size={40} className="animate-spin text-indigo-600 mx-auto mb-4" />
+          <p className="text-gray-600">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not logged in — show login prompt
+  if (!user) {
+    return (
+      <div className="bg-white min-h-screen flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center">
+          <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Briefcase size={36} className="text-indigo-600" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-3">포트폴리오</h1>
+          <p className="text-gray-600 mb-8 leading-relaxed">
+            로그인하면 나만의 DevOps/SRE 포트폴리오를 만들고 관리할 수 있어요.
+            AI 코치가 빅테크 기준에 맞게 포트폴리오를 분석해 드립니다.
+          </p>
+          <button
+            onClick={signIn}
+            className="inline-flex items-center gap-3 px-8 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors text-lg"
+          >
+            <LogIn size={22} />
+            GitHub로 로그인
+          </button>
+          <p className="mt-6 text-xs text-gray-500">
+            GitHub 계정으로 간편하게 로그인하세요
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Data loading state
+  if (dataLoading) {
+    return (
+      <div className="bg-white min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 size={40} className="animate-spin text-indigo-600 mx-auto mb-4" />
+          <p className="text-gray-600">포트폴리오를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
 
   // AI Suggestion Mock Functions
   const showAISuggestion = (type: string) => {
@@ -277,11 +331,11 @@ export default function PortfolioPage() {
           <div className="flex flex-col md:flex-row gap-8">
             {/* Profile Photo */}
             <div className="flex-shrink-0">
-              <div className="w-32 h-32 md:w-40 md:h-40 bg-gradient-to-br from-indigo-100 to-blue-100 rounded-full flex items-center justify-center border-4 border-indigo-200">
+              <div className="w-32 h-32 md:w-40 md:h-40 bg-gradient-to-br from-indigo-100 to-blue-100 rounded-full flex items-center justify-center border-4 border-indigo-200 overflow-hidden relative">
                 {profile.profileImage ? (
-                  <Image src={profile.profileImage} alt={profile.name} fill className="rounded-full" />
+                  <Image src={profile.profileImage} alt={profile.name || 'Profile'} fill className="rounded-full object-cover" />
                 ) : (
-                  <div className="text-5xl text-indigo-400 font-bold">{profile.name[0]}</div>
+                  <div className="text-5xl text-indigo-400 font-bold">{(profile.name || '?')[0]}</div>
                 )}
               </div>
               <button className="mt-4 w-full px-3 py-2 bg-indigo-50 text-indigo-600 text-sm font-medium rounded-lg border border-indigo-200 hover:bg-indigo-100 transition-colors">
@@ -337,9 +391,24 @@ export default function PortfolioPage() {
               </div>
 
               {/* Actions */}
-              <button className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">
-                PDF로 내보내기
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={savePortfolio}
+                  disabled={saving}
+                  className="inline-flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                >
+                  {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                  {saving ? '저장 중...' : '저장하기'}
+                </button>
+                <button className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+                  PDF로 내보내기
+                </button>
+              </div>
+              {saveMessage && (
+                <p className={`mt-2 text-sm ${saveMessage.includes('실패') || saveMessage.includes('오류') ? 'text-red-600' : 'text-green-600'}`}>
+                  {saveMessage}
+                </p>
+              )}
             </div>
           </div>
         </div>
