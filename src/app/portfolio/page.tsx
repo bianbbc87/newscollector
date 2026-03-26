@@ -274,7 +274,7 @@ export default function PortfolioPage() {
   ]);
 
   // Build portfolio data for API calls
-  const getPortfolioData = useCallback(() => ({
+  const getPortfolioData = () => ({
     name: profile.name,
     title: profile.title,
     bio: profile.bio,
@@ -282,7 +282,7 @@ export default function PortfolioPage() {
     projects,
     skills,
     certifications,
-  }), [profile, experiences, projects, skills, certifications]);
+  });
 
   // Real AI: Improve a specific section
   const showAISuggestion = async (type: string) => {
