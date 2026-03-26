@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase';
-import { crawlHackerNews, crawlRSS, crawlGitHub } from '@/lib/crawlers';
+import { crawlHackerNews, crawlRSS, crawlGitHub, crawlDevpost } from '@/lib/crawlers';
 
 // RSS feed sources to crawl - comprehensive list including major tech blogs and engineering blogs
 const RSS_SOURCES = [
@@ -77,6 +77,15 @@ export async function POST(request: NextRequest) {
       } catch (e) {
         console.error('GitHub crawl failed:', e);
         results.github = 0;
+      }
+    }
+
+    if (!source || source === 'devpost') {
+      try {
+        results.devpost = await crawlDevpost();
+      } catch (e) {
+        console.error('Devpost crawl failed:', e);
+        results.devpost = 0;
       }
     }
 
