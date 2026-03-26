@@ -132,9 +132,24 @@ export async function crawlHackerNews(): Promise<number> {
   }
 
   if (rows.length > 0) {
-    const { error } = await supabase.from('opportunities').insert(rows);
-    if (error) console.error('HN insert error:', error.message);
+    // Upsert to avoid duplicates - use url as unique key
+    let inserted = 0;
+    for (const row of rows) {
+      const { data: existing } = await supabase
+        .from('opportunities')
+        .select('id')
+        .eq('url', row.url as string)
+        .limit(1);
+      if (existing && existing.length > 0) continue;
+      const { error } = await supabase.from('opportunities').insert(row);
+      if (error) {
+        console.error('HN insert error:', error.message);
+      } else {
+        inserted++;
+      }
+    }
+    return inserted;
   }
 
-  return rows.length;
+  return 0;
 }

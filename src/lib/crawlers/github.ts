@@ -146,9 +146,23 @@ export async function crawlGitHub(): Promise<number> {
   }
 
   if (rows.length > 0) {
-    const { error } = await supabase.from('opportunities').insert(rows);
-    if (error) console.error('GitHub insert error:', error.message);
+    let inserted = 0;
+    for (const row of rows) {
+      const { data: existing } = await supabase
+        .from('opportunities')
+        .select('id')
+        .eq('url', row.url as string)
+        .limit(1);
+      if (existing && existing.length > 0) continue;
+      const { error } = await supabase.from('opportunities').insert(row);
+      if (error) {
+        console.error('GitHub insert error:', error.message);
+      } else {
+        inserted++;
+      }
+    }
+    return inserted;
   }
 
-  return rows.length;
+  return 0;
 }

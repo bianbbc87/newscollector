@@ -14,7 +14,7 @@ interface Opportunity {
   organization: string;
   type: 'job' | 'hackathon' | 'program' | 'conference' | 'opensource' | 'trend' | 'paper';
   tags: Tag[];
-  deadline: string;
+  deadline: string | null;
   relevanceScore: number;
   description?: string;
   link?: string;
@@ -51,18 +51,23 @@ const typeLabels: Record<string, string> = {
   paper: '논문',
 };
 
-const getDeadlineColor = (deadline: string): { bg: string; text: string } => {
+const getDeadlineColor = (deadline: string | null): { bg: string; text: string } => {
+  if (!deadline) return { bg: 'bg-emerald-100', text: 'text-emerald-700' };
   const now = new Date();
   const deadlineDate = new Date(deadline);
+  if (isNaN(deadlineDate.getTime())) return { bg: 'bg-emerald-100', text: 'text-emerald-700' };
   const daysLeft = Math.floor((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
+  if (daysLeft < 0) return { bg: 'bg-gray-100', text: 'text-gray-500' };
   if (daysLeft < 3) return { bg: 'bg-rose-100', text: 'text-rose-700' };
   if (daysLeft < 7) return { bg: 'bg-amber-100', text: 'text-amber-700' };
   return { bg: 'bg-gray-100', text: 'text-gray-700' };
 };
 
-const formatDeadline = (deadline: string): string => {
+const formatDeadline = (deadline: string | null): string => {
+  if (!deadline) return '상시 모집';
   const date = new Date(deadline);
+  if (isNaN(date.getTime())) return '상시 모집';
   const now = new Date();
   const daysLeft = Math.floor((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 

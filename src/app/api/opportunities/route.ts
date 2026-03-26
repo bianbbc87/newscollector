@@ -26,6 +26,9 @@ export async function GET(request: NextRequest) {
 
     if (status) {
       query = query.eq('status', status);
+    } else {
+      // Default: only show active items
+      query = query.eq('status', 'active');
     }
 
     if (tags.length > 0) {

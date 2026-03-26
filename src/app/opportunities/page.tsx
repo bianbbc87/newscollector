@@ -11,7 +11,7 @@ interface Opportunity {
   organization: string;
   type: 'job' | 'hackathon' | 'program' | 'conference' | 'opensource' | 'trend' | 'paper';
   tags: Array<{ name: string; category?: string }>;
-  deadline: string;
+  deadline: string | null;
   relevance_score?: number;
   relevanceScore: number;
   description?: string;
@@ -52,8 +52,12 @@ export default function OpportunitiesPage() {
         const data = await response.json();
         const normalized = (data.data || []).map((opp: any) => ({
           ...opp,
-          relevanceScore: opp.relevance_score || 0.5,
-          postedAt: opp.posted_at,
+          relevanceScore: Math.round((opp.relevance_score || 0.5) * 100),
+          postedAt: opp.posted_at || opp.created_at,
+          deadline: opp.deadline || null,
+          tags: Array.isArray(opp.tags)
+            ? opp.tags.map((t: any) => typeof t === 'string' ? { name: t } : t)
+            : [],
         }));
         setOpportunities(normalized);
       }

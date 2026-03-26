@@ -11,7 +11,7 @@ interface Opportunity {
   organization: string;
   type: 'job' | 'hackathon' | 'program' | 'conference' | 'opensource' | 'trend' | 'paper';
   tags: Array<{ name: string; category?: string }>;
-  deadline: string;
+  deadline: string | null;
   relevance_score?: number;
   relevanceScore: number;
   description?: string;
@@ -62,8 +62,12 @@ export default function Dashboard() {
         const oppData = await oppRes.json();
         const normalized = (oppData.data || []).map((opp: any) => ({
           ...opp,
-          relevanceScore: opp.relevance_score || 0.5,
-          postedAt: opp.posted_at,
+          relevanceScore: Math.round((opp.relevance_score || 0.5) * 100),
+          postedAt: opp.posted_at || opp.created_at,
+          deadline: opp.deadline || null,
+          tags: Array.isArray(opp.tags)
+            ? opp.tags.map((t: any) => typeof t === 'string' ? { name: t } : t)
+            : [],
         }));
         setOpportunities(normalized);
       }
@@ -131,9 +135,10 @@ export default function Dashboard() {
     {
       label: '급한 마감',
       value: opportunities.filter((o) => {
-        const daysLeft = Math.floor(
-          (new Date(o.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-        );
+        if (!o.deadline) return false;
+        const d = new Date(o.deadline);
+        if (isNaN(d.getTime())) return false;
+        const daysLeft = Math.floor((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
         return daysLeft < 7 && daysLeft >= 0;
       }).length,
       icon: <Clock size={28} />,
