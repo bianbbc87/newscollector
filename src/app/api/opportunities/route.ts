@@ -50,6 +50,9 @@ export async function GET(request: NextRequest) {
       query = query.order('created_at', { ascending: false });
     }
 
+    // Ensure url field is included (it's the original source link)
+    // Note: url field is selected in the main select statement
+
     // Pagination
     query = query.range(offset, offset + limit - 1);
 
