@@ -14,18 +14,38 @@ function getGenAI(): GoogleGenerativeAI {
 /**
  * Call Gemini API with system + user prompt
  */
-async function callGemini(systemPrompt: string, userPrompt: string, maxTokens: number = 1500): Promise<string> {
+async function callGemini(systemPrompt: string, userPrompt: string, maxTokens: number = 2500, jsonMode: boolean = false): Promise<string> {
+  const generationConfig: Record<string, unknown> = {
+    maxOutputTokens: maxTokens,
+    temperature: 0.7,
+  };
+  if (jsonMode) {
+    generationConfig.responseMimeType = 'application/json';
+  }
   const model = getGenAI().getGenerativeModel({
     model: 'gemini-2.5-flash',
     systemInstruction: systemPrompt,
-    generationConfig: {
-      maxOutputTokens: maxTokens,
-      temperature: 0.7,
-    },
+    generationConfig,
   });
 
   const result = await model.generateContent(userPrompt);
   return result.response.text();
+}
+
+function safeParseJSON(text: string): Record<string, unknown> {
+  // Try direct parse first
+  try { return JSON.parse(text); } catch { /* continue */ }
+  // Try extracting JSON from markdown code blocks
+  const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlock) {
+    try { return JSON.parse(codeBlock[1].trim()); } catch { /* continue */ }
+  }
+  // Try extracting the outermost JSON object
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try { return JSON.parse(jsonMatch[0]); } catch { /* continue */ }
+  }
+  return {};
 }
 
 interface PortfolioData {
@@ -266,11 +286,10 @@ ${opportunityContext}
   }
 }`;
 
-    const responseText = await callGemini(systemPrompt, userPrompt, 1500);
+    const responseText = await callGemini(systemPrompt, userPrompt, 2500, true);
 
-    // Extract JSON from response (handle markdown code blocks)
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    const result = JSON.parse(jsonMatch ? jsonMatch[0] : '{}');
+    // Safely parse JSON response
+    const result = safeParseJSON(responseText);
 
     // Save coaching history for learning
     const db = getServiceSupabase();
@@ -419,9 +438,8 @@ ${interactionContext}
   "trendingSkills": ["현재 트렌딩 스킬1", "현재 트렌딩 스킬2"]
 }`;
 
-    const responseText = await callGemini(systemPrompt, userPrompt, 800);
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    const result = JSON.parse(jsonMatch ? jsonMatch[0] : '{}');
+    const responseText = await callGemini(systemPrompt, userPrompt, 1200, true);
+    const result = safeParseJSON(responseText);
 
     return {
       missingSkills: Array.isArray(result.missingSkills) ? result.missingSkills : [],
