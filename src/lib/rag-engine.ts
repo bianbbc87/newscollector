@@ -16,7 +16,7 @@ function getGenAI(): GoogleGenerativeAI {
  */
 async function callGemini(systemPrompt: string, userPrompt: string, maxTokens: number = 1500): Promise<string> {
   const model = getGenAI().getGenerativeModel({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     systemInstruction: systemPrompt,
     generationConfig: {
       maxOutputTokens: maxTokens,
