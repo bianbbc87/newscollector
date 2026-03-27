@@ -243,7 +243,7 @@ ${opportunityContext}
 }`;
 
     const message = await client.messages.create({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 1500,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
@@ -275,9 +275,16 @@ ${opportunityContext}
     };
   } catch (error) {
     console.error('Portfolio analysis error:', error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    let summary = '분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    if (errMsg.includes('credit') || errMsg.includes('billing') || errMsg.includes('too low')) {
+      summary = 'AI API 크레딧이 부족합니다. Anthropic 계정에서 크레딧을 충전해주세요.';
+    } else if (errMsg.includes('deprecated') || errMsg.includes('not found')) {
+      summary = 'AI 모델 오류입니다. 관리자에게 문의해주세요.';
+    }
     return {
       score: 0,
-      summary: '분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+      summary,
       strengths: [],
       improvements: [],
       checklist: [],
@@ -313,7 +320,7 @@ export async function improveSectionWithAI(
 조언은 300자 이내로 핵심만 전달하세요.`;
 
     const message = await client.messages.create({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 500,
       system: systemPrompt,
       messages: [
@@ -389,7 +396,7 @@ export async function analyzeSkillGapRAG(
 반드시 유효한 JSON으로만 응답하세요.`;
 
     const message = await client.messages.create({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 800,
       system: systemPrompt,
       messages: [
