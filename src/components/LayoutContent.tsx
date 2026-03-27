@@ -156,8 +156,10 @@ export default function LayoutContent({ navigationItems, children }: LayoutConte
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-gray-50 md:bg-gray-50">
-        {children}
+      <main className="flex-1 overflow-y-auto bg-gray-50">
+        <div className="max-w-6xl mx-auto">
+          {children}
+        </div>
       </main>
 
       {/* Bottom Navigation - Mobile */}

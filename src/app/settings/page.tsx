@@ -181,7 +181,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-4xl pb-32 md:pb-8">
+    <div className="p-6 md:p-10 lg:p-12 max-w-4xl pb-32 md:pb-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">설정</h1>

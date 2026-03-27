@@ -410,7 +410,7 @@ export default function PortfolioPage() {
 
   return (
     <div className="bg-white min-h-screen">
-      <div className="max-w-7xl mx-auto p-6 md:p-8">
+      <div className="max-w-7xl mx-auto p-6 md:p-10 lg:p-12">
         {/* PROFILE HEADER */}
         <div className="mb-12 bg-white rounded-lg border border-gray-200 shadow-sm p-8">
           <div className="flex flex-col md:flex-row gap-8">

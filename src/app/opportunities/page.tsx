@@ -136,7 +136,7 @@ export default function OpportunitiesPage() {
 
   return (
     <div className="bg-gray-50 min-h-screen pb-32 md:pb-8">
-      <div className="p-8 md:p-10">
+      <div className="p-6 md:p-10 lg:p-12">
         {/* Header */}
         <div className="mb-10">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">기회</h1>
