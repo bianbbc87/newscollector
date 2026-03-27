@@ -52,54 +52,54 @@ export async function POST(request: NextRequest) {
     }
 
     const results: Record<string, number> = {};
+    const tasks: Promise<void>[] = [];
 
     if (!source || source === 'hackernews') {
-      try {
-        results.hackernews = await crawlHackerNews();
-      } catch (e) {
-        console.error('HN crawl failed:', e);
-        results.hackernews = 0;
-      }
+      tasks.push(
+        crawlHackerNews()
+          .then((n) => { results.hackernews = n; })
+          .catch((e) => { console.error('HN crawl failed:', e); results.hackernews = 0; })
+      );
     }
 
     if (!source || source === 'rss') {
-      let rssTotal = 0;
-      for (const feed of RSS_SOURCES) {
-        try {
-          rssTotal += await crawlRSS(feed.name, feed.url);
-        } catch (e) {
-          console.error(`RSS crawl failed (${feed.name}):`, e);
-        }
-      }
-      results.rss = rssTotal;
+      tasks.push(
+        Promise.all(
+          RSS_SOURCES.map((feed) =>
+            crawlRSS(feed.name, feed.url).catch((e) => {
+              console.error(`RSS crawl failed (${feed.name}):`, e);
+              return 0;
+            })
+          )
+        ).then((counts) => { results.rss = counts.reduce((a, b) => a + b, 0); })
+      );
     }
 
     if (!source || source === 'github') {
-      try {
-        results.github = await crawlGitHub();
-      } catch (e) {
-        console.error('GitHub crawl failed:', e);
-        results.github = 0;
-      }
+      tasks.push(
+        crawlGitHub()
+          .then((n) => { results.github = n; })
+          .catch((e) => { console.error('GitHub crawl failed:', e); results.github = 0; })
+      );
     }
 
     if (!source || source === 'devpost') {
-      try {
-        results.devpost = await crawlDevpost();
-      } catch (e) {
-        console.error('Devpost crawl failed:', e);
-        results.devpost = 0;
-      }
+      tasks.push(
+        crawlDevpost()
+          .then((n) => { results.devpost = n; })
+          .catch((e) => { console.error('Devpost crawl failed:', e); results.devpost = 0; })
+      );
     }
 
     if (!source || source === 'programs') {
-      try {
-        results.programs = await crawlPrograms();
-      } catch (e) {
-        console.error('Programs crawl failed:', e);
-        results.programs = 0;
-      }
+      tasks.push(
+        crawlPrograms()
+          .then((n) => { results.programs = n; })
+          .catch((e) => { console.error('Programs crawl failed:', e); results.programs = 0; })
+      );
     }
+
+    await Promise.all(tasks);
 
     // Update crawl_configs last_run_at
     const supabase = getServiceSupabase();
