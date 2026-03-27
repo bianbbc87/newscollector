@@ -302,11 +302,11 @@ ${opportunityContext}
 
     return {
       score: typeof result.score === 'number' ? Math.max(0, Math.min(100, result.score)) : 50,
-      summary: result.summary || '포트폴리오 분석을 완료했습니다.',
+      summary: (result.summary as string) || '포트폴리오 분석을 완료했습니다.',
       strengths: Array.isArray(result.strengths) ? result.strengths : [],
       improvements: Array.isArray(result.improvements) ? result.improvements : [],
       checklist: Array.isArray(result.checklist) ? result.checklist : [],
-      detailedFeedback: result.detailedFeedback || {},
+      detailedFeedback: (result.detailedFeedback as Record<string, string>) || {},
     };
   } catch (error) {
     console.error('Portfolio analysis error:', error);
