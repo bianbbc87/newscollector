@@ -1,8 +1,32 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getServiceSupabase } from './supabase';
 import { generateEmbedding, searchSimilarOpportunities } from './embeddings';
 
-const client = new Anthropic();
+// Lazy initialization to avoid build-time errors
+let _genAI: GoogleGenerativeAI | null = null;
+function getGenAI(): GoogleGenerativeAI {
+  if (!_genAI) {
+    _genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+  }
+  return _genAI;
+}
+
+/**
+ * Call Gemini API with system + user prompt
+ */
+async function callGemini(systemPrompt: string, userPrompt: string, maxTokens: number = 1500): Promise<string> {
+  const model = getGenAI().getGenerativeModel({
+    model: 'gemini-2.0-flash',
+    systemInstruction: systemPrompt,
+    generationConfig: {
+      maxOutputTokens: maxTokens,
+      temperature: 0.7,
+    },
+  });
+
+  const result = await model.generateContent(userPrompt);
+  return result.response.text();
+}
 
 interface PortfolioData {
   name: string;
@@ -178,7 +202,7 @@ async function buildOpportunityContext(
 }
 
 /**
- * RAG-powered Portfolio Coach
+ * RAG-powered Portfolio Coach (Gemini)
  * Analyzes portfolio with full context (user data + behavior + market trends)
  */
 export async function analyzePortfolio(
@@ -205,7 +229,7 @@ export async function analyzePortfolio(
 4. STAR 기법 기반 경력 기술
 5. 정량적 성과 표현 (비용 절감 %, 가용성 개선 등)
 
-반드시 유효한 JSON으로만 응답하세요.`;
+반드시 유효한 JSON으로만 응답하세요. 마크다운 코드 블록 없이 순수 JSON만 반환하세요.`;
 
     const userPrompt = `아래 정보를 바탕으로 이 사용자의 포트폴리오를 분석해주세요.
 
@@ -222,8 +246,8 @@ ${opportunityContext}
 {
   "score": 0-100 정수,
   "summary": "한 문장 요약",
-  "strengths": ["강점1", "강점2", ...],
-  "improvements": ["개선점1", "개선점2", ...],
+  "strengths": ["강점1", "강점2"],
+  "improvements": ["개선점1", "개선점2"],
   "checklist": [
     {"item": "System Design 경험 시연", "checked": true/false},
     {"item": "Open Source 기여", "checked": true/false},
@@ -242,15 +266,7 @@ ${opportunityContext}
   }
 }`;
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1500,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
-    });
-
-    const responseText =
-      message.content[0].type === 'text' ? message.content[0].text : '{}';
+    const responseText = await callGemini(systemPrompt, userPrompt, 1500);
 
     // Extract JSON from response (handle markdown code blocks)
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
@@ -277,10 +293,10 @@ ${opportunityContext}
     console.error('Portfolio analysis error:', error);
     const errMsg = error instanceof Error ? error.message : String(error);
     let summary = '분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
-    if (errMsg.includes('credit') || errMsg.includes('billing') || errMsg.includes('too low')) {
-      summary = 'AI API 크레딧이 부족합니다. Anthropic 계정에서 크레딧을 충전해주세요.';
-    } else if (errMsg.includes('deprecated') || errMsg.includes('not found')) {
-      summary = 'AI 모델 오류입니다. 관리자에게 문의해주세요.';
+    if (errMsg.includes('API_KEY') || errMsg.includes('apiKey')) {
+      summary = 'Gemini API 키가 설정되지 않았습니다. 환경변수를 확인해주세요.';
+    } else if (errMsg.includes('quota') || errMsg.includes('RATE_LIMIT')) {
+      summary = 'API 요청 한도에 도달했습니다. 잠시 후 다시 시도해주세요.';
     }
     return {
       score: 0,
@@ -294,7 +310,7 @@ ${opportunityContext}
 }
 
 /**
- * RAG-powered Section Improvement
+ * RAG-powered Section Improvement (Gemini)
  * Gives specific AI feedback for a portfolio section
  */
 export async function improveSectionWithAI(
@@ -319,14 +335,7 @@ export async function improveSectionWithAI(
 한국어로 답변하되, 기술 용어는 영어 원문 그대로 사용하세요.
 조언은 300자 이내로 핵심만 전달하세요.`;
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 500,
-      system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: `이 사용자의 "${sectionLabels[sectionType] || sectionType}" 섹션을 개선해주세요.
+    const userPrompt = `이 사용자의 "${sectionLabels[sectionType] || sectionType}" 섹션을 개선해주세요.
 
 === 전체 포트폴리오 컨텍스트 ===
 ${portfolioContext}
@@ -340,13 +349,9 @@ ${interactionContext}
 빅테크 채용 기준에 맞춰 구체적인 개선 방안을 제시해주세요.
 1) 현재 내용의 문제점
 2) 구체적 개선 제안 (예시 포함)
-3) 빅테크 합격자들의 일반적인 패턴`,
-        },
-      ],
-    });
+3) 빅테크 합격자들의 일반적인 패턴`;
 
-    const responseText =
-      message.content[0].type === 'text' ? message.content[0].text : '';
+    const responseText = await callGemini(systemPrompt, userPrompt, 500);
 
     // Save to coaching history
     const db = getServiceSupabase();
@@ -365,7 +370,7 @@ ${interactionContext}
 }
 
 /**
- * RAG-powered Skill Gap Analysis
+ * RAG-powered Skill Gap Analysis (Gemini)
  * Compares user's skills against market demand using vector search
  */
 export async function analyzeSkillGapRAG(
@@ -393,16 +398,9 @@ export async function analyzeSkillGapRAG(
 
     const systemPrompt = `당신은 DevOps/SRE 분야 기술 트렌드 분석 전문가입니다.
 시장 데이터와 사용자 프로필을 비교하여 스킬 갭을 분석합니다.
-반드시 유효한 JSON으로만 응답하세요.`;
+반드시 유효한 JSON으로만 응답하세요. 마크다운 코드 블록 없이 순수 JSON만 반환하세요.`;
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 800,
-      system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: `목표 역할: ${role}
+    const userPrompt = `목표 역할: ${role}
 
 현재 보유 기술: ${currentSkills.join(', ')}
 
@@ -419,13 +417,9 @@ ${interactionContext}
   "gapScore": 0.0-1.0 (0=완벽 매치, 1=매치 없음),
   "recommendations": ["학습 추천1", "학습 추천2"],
   "trendingSkills": ["현재 트렌딩 스킬1", "현재 트렌딩 스킬2"]
-}`,
-        },
-      ],
-    });
+}`;
 
-    const responseText =
-      message.content[0].type === 'text' ? message.content[0].text : '{}';
+    const responseText = await callGemini(systemPrompt, userPrompt, 800);
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     const result = JSON.parse(jsonMatch ? jsonMatch[0] : '{}');
 
