@@ -227,8 +227,22 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Error State */}
+      {!loading && error && (
+        <div className="bg-rose-50 border border-rose-200 rounded-xl p-6 text-center">
+          <p className="text-rose-600 font-semibold mb-1">⚠️ 오류 발생</p>
+          <p className="text-rose-500 text-sm mb-3">{error}</p>
+          <button
+            onClick={fetchData}
+            className="text-rose-600 hover:text-rose-700 text-sm font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 rounded"
+          >
+            다시 시도
+          </button>
+        </div>
+      )}
+
       {/* Recent Opportunities */}
-      {!loading && (
+      {!loading && !error && (
         <div>
           {opportunities.length > 0 ? (
             <>
