@@ -4,30 +4,25 @@ import { useState, useEffect } from 'react';
 import { TrendingUp, Briefcase, CheckCircle, Clock, RefreshCw } from 'lucide-react';
 import OpportunityCard from '@/components/OpportunityCard';
 import ReportModal from '@/components/ReportModal';
+import type { Opportunity as BaseOpportunity, Signal as BaseSignal } from '@/types';
 
-interface Opportunity {
-  id: string;
-  title: string;
-  organization: string;
-  type: 'job' | 'hackathon' | 'program' | 'conference' | 'opensource' | 'trend' | 'paper';
+// Dashboard-local view model extends the canonical types from @/types
+// with UI-only fields computed during normalization.
+type Opportunity = Pick<
+  BaseOpportunity,
+  'id' | 'title' | 'organization' | 'type' | 'deadline' | 'description' | 'url' | 'relevance_score'
+> & {
   tags: Array<{ name: string; category?: string }>;
-  deadline: string | null;
-  relevance_score?: number;
-  relevanceScore: number;
-  description?: string;
+  relevanceScore: number; // relevance_score * 100, rounded
   link?: string;
-  url?: string;
   posted_at?: string;
   postedAt?: string;
-}
+};
 
-interface Signal {
-  keyword: string;
-  mention_count: number;
+type Signal = Pick<BaseSignal, 'keyword' | 'mention_count' | 'trend'> & {
   mentionCount?: number;
-  trend: 'up' | 'down' | 'stable' | 'spike';
   trendValue?: number;
-}
+};
 
 interface StatCard {
   label: string;
