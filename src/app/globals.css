@@ -17,6 +17,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Focus visibility — ensure keyboard users always see a ring */
+:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+/* Remove focus outline for mouse users only when :focus-visible is supported */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: #f3f4f6; }
