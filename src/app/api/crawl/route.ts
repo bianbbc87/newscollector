@@ -41,13 +41,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const { source, manual } = body as { source?: string; manual?: boolean };
 
-    // Authorization: allow CRON_SECRET for scheduled runs, or same-origin requests for manual triggers
+    // Authorization:
+    // 1. Scheduled runs (GitHub Actions): Bearer CRON_SECRET in Authorization header
+    // 2. Manual triggers from the dashboard UI: same-origin request verified via Origin header
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
-    const isAuthorizedCron = cronSecret && authHeader === `Bearer ${cronSecret}`;
-    const isManualTrigger = manual === true;
+    const isAuthorizedCron = !!(cronSecret && authHeader === `Bearer ${cronSecret}`);
 
-    if (!isAuthorizedCron && !isManualTrigger) {
+    // For manual triggers, verify same-origin by checking the Origin header matches
+    // the request host. Browsers always send Origin on cross-origin fetches and
+    // omit or set it to the page origin for same-origin requests.
+    const requestHost = request.headers.get('host') || '';
+    const originHeader = request.headers.get('origin') || '';
+    const isSameOriginManual =
+      manual === true &&
+      !!originHeader &&
+      (originHeader === `https://${requestHost}` ||
+        originHeader === `http://${requestHost}`);
+
+    if (!isAuthorizedCron && !isSameOriginManual) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
