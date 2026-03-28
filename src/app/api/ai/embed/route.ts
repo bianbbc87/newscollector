@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     // Fetch full data for un-embedded opportunities
     const { data: toEmbed } = await db
       .from('opportunities')
-      .select('id, title, description, source, type, tags')
+      .select('id, title, description, source_url, type, tags')
       .in('id', unembeddedIds);
 
     if (!toEmbed || toEmbed.length === 0) {
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
         id: o.id as string,
         title: o.title as string,
         description: (o.description as string) || '',
-        source: (o.source as string) || '',
+        source: (o.source_url as string) || '',
         type: (o.type as string) || '',
         tags: (o.tags as string[]) || [],
       }))

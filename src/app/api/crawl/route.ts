@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase';
 import { crawlHackerNews, crawlRSS, crawlGitHub, crawlDevpost, crawlPrograms } from '@/lib/crawlers';
+import { batchEmbedOpportunities } from '@/lib/embeddings';
 
 // RSS feed sources to crawl - comprehensive list including major tech blogs and engineering blogs
 const RSS_SOURCES = [
@@ -122,10 +123,44 @@ export async function POST(request: NextRequest) {
 
     const total = Object.values(results).reduce((a, b) => a + b, 0);
 
+    // Embed any opportunities that haven't been embedded yet.
+    // We fetch IDs already in opportunity_embeddings and exclude them.
+    let embeddedCount = 0;
+    try {
+      const { data: existingEmbeds } = await supabase
+        .from('opportunity_embeddings')
+        .select('opportunity_id');
+
+      const embeddedIds = new Set((existingEmbeds || []).map((r: { opportunity_id: string }) => r.opportunity_id));
+
+      const { data: unembedded } = await supabase
+        .from('opportunities')
+        .select('id, title, description, source_url, type, tags')
+        .eq('status', 'active')
+        .not('id', 'in', embeddedIds.size > 0 ? `(${[...embeddedIds].join(',')})` : '(00000000-0000-0000-0000-000000000000)');
+
+      if (unembedded && unembedded.length > 0) {
+        embeddedCount = await batchEmbedOpportunities(
+          unembedded.map((o: { id: string; title: string; description: string; source_url: string; type: string; tags: string[] }) => ({
+            id: o.id,
+            title: o.title,
+            description: o.description,
+            source: o.source_url,
+            type: o.type,
+            tags: Array.isArray(o.tags) ? o.tags : [],
+          }))
+        );
+      }
+    } catch (embedError) {
+      // Embedding failures should not fail the whole crawl response
+      console.error('Embedding step error:', embedError);
+    }
+
     return NextResponse.json({
       success: true,
-      message: `Crawled ${total} opportunities`,
+      message: `Crawled ${total} opportunities, embedded ${embeddedCount}`,
       results,
+      embedded: embeddedCount,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
