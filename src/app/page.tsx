@@ -53,9 +53,10 @@ export default function Dashboard() {
     try {
       setLoading(true);
 
-      const [oppRes, signalRes] = await Promise.all([
+      const [oppRes, signalRes, appRes] = await Promise.all([
         fetch('/api/opportunities?limit=20&sort=relevance'),
         fetch('/api/signals?limit=10'),
+        fetch('/api/applications'),
       ]);
 
       if (oppRes.ok) {
@@ -81,7 +82,10 @@ export default function Dashboard() {
         setSignals(normalized);
       }
 
-      setApplications(7);
+      if (appRes.ok) {
+        const appData = await appRes.json();
+        setApplications(appData.total ?? (appData.data?.length || 0));
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
