@@ -43,6 +43,7 @@ export default function Dashboard() {
   const [reportingOpportunity, setReportingOpportunity] = useState<Opportunity | null>(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [crawling, setCrawling] = useState(false);
 
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function Dashboard() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      setError(null);
 
       const [oppRes, signalRes, appRes] = await Promise.all([
         fetch('/api/opportunities?limit=20&sort=relevance'),
@@ -86,8 +88,9 @@ export default function Dashboard() {
         const appData = await appRes.json();
         setApplications(appData.total ?? (appData.data?.length || 0));
       }
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setLoading(false);
     }
@@ -224,8 +227,22 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Error State */}
+        {!loading && error && (
+          <div className="bg-rose-50 border border-rose-200 rounded-xl p-8 text-center">
+            <p className="text-rose-600 font-semibold mb-2">⚠️ 오류 발생</p>
+            <p className="text-rose-500 text-sm mb-4">{error}</p>
+            <button
+              onClick={fetchData}
+              className="text-rose-600 hover:text-rose-700 font-semibold underline text-sm"
+            >
+              다시 시도
+            </button>
+          </div>
+        )}
+
         {/* Recent Opportunities */}
-        {!loading && (
+        {!loading && !error && (
           <div>
             {opportunities.length > 0 ? (
               <>
