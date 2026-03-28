@@ -224,7 +224,7 @@ export default function PortfolioPage() {
   // Auth loading state
   if (authLoading) {
     return (
-      <div className="bg-white min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-24">
         <div className="text-center">
           <Loader2 size={40} className="animate-spin text-indigo-600 mx-auto mb-4" />
           <p className="text-gray-600">로딩 중...</p>
@@ -236,7 +236,7 @@ export default function PortfolioPage() {
   // Not logged in — show login prompt
   if (!user) {
     return (
-      <div className="bg-white min-h-screen flex items-center justify-center p-4">
+      <div className="flex items-center justify-center py-16 px-4">
         <div className="max-w-md w-full text-center">
           <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Briefcase size={36} className="text-indigo-600" />
@@ -264,7 +264,7 @@ export default function PortfolioPage() {
   // Data loading state
   if (dataLoading) {
     return (
-      <div className="bg-white min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-24">
         <div className="text-center">
           <Loader2 size={40} className="animate-spin text-indigo-600 mx-auto mb-4" />
           <p className="text-gray-600">포트폴리오를 불러오는 중...</p>
@@ -409,8 +409,7 @@ export default function PortfolioPage() {
   );
 
   return (
-    <div className="bg-white min-h-screen">
-      <div className="max-w-7xl mx-auto p-6 md:p-10 lg:p-12">
+    <div>
         {/* PROFILE HEADER */}
         <div className="mb-12 bg-white rounded-lg border border-gray-200 shadow-sm p-8">
           <div className="flex flex-col md:flex-row gap-8">
@@ -843,7 +842,6 @@ export default function PortfolioPage() {
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 }
