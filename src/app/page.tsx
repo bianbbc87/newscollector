@@ -160,7 +160,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen py-6 md:py-8">
+    <>
       {/* Header row */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -286,6 +286,6 @@ export default function Dashboard() {
         }}
         opportunityId={reportingOpportunity?.id}
       />
-    </div>
+    </>
   );
 }

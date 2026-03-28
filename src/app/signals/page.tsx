@@ -137,7 +137,7 @@ export default function SignalsPage() {
   };
 
   return (
-    <div className="p-6 md:p-10 lg:p-12 pb-32 md:pb-8">
+    <div>
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">신호</h1>
