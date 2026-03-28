@@ -189,8 +189,8 @@ export default function LayoutContent({ navigationItems, children }: LayoutConte
 
       {/* Main Content */}
       <main id="main-content" className="flex-1 overflow-y-auto" tabIndex={-1}>
-        {/* Body-level container: centering + padding lives HERE, once, for all pages */}
-        <div className="max-w-3xl mx-auto px-6 py-6 md:px-8 md:py-8 pb-24 md:pb-8">
+        {/* Body-level container: padding lives HERE, once, for all pages — no max-w inside sidebar */}
+        <div className="px-6 py-6 md:px-8 md:py-8 pb-24 md:pb-8">
           {children}
         </div>
       </main>
