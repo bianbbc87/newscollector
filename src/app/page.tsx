@@ -4,25 +4,34 @@ import { useState, useEffect } from 'react';
 import { TrendingUp, Briefcase, CheckCircle, Clock, RefreshCw } from 'lucide-react';
 import OpportunityCard from '@/components/OpportunityCard';
 import ReportModal from '@/components/ReportModal';
-import type { Opportunity as BaseOpportunity, Signal as BaseSignal } from '@/types';
 
-// Dashboard-local view model extends the canonical types from @/types
-// with UI-only fields computed during normalization.
-type Opportunity = Pick<
-  BaseOpportunity,
-  'id' | 'title' | 'organization' | 'type' | 'deadline' | 'description' | 'url' | 'relevance_score'
-> & {
+// Dashboard view-model types.
+// These align with OpportunityCard's internal interface.
+// TODO: migrate OpportunityCard to use @/types/index.ts canonical types,
+// then remove these local definitions.
+interface DashboardOpportunity {
+  id: string;
+  title: string;
+  organization: string;
+  type: 'job' | 'hackathon' | 'program' | 'conference' | 'opensource' | 'trend' | 'paper';
   tags: Array<{ name: string; category?: string }>;
-  relevanceScore: number; // relevance_score * 100, rounded
+  deadline: string | null;
+  relevance_score?: number;
+  relevanceScore: number;
+  description?: string;
   link?: string;
+  url?: string;
   posted_at?: string;
   postedAt?: string;
-};
+}
 
-type Signal = Pick<BaseSignal, 'keyword' | 'mention_count' | 'trend'> & {
+interface DashboardSignal {
+  keyword: string;
+  mention_count: number;
   mentionCount?: number;
+  trend: 'up' | 'down' | 'stable' | 'spike';
   trendValue?: number;
-};
+}
 
 interface StatCard {
   label: string;
@@ -32,12 +41,13 @@ interface StatCard {
 }
 
 export default function Dashboard() {
-  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
-  const [signals, setSignals] = useState<Signal[]>([]);
+  const [opportunities, setOpportunities] = useState<DashboardOpportunity[]>([]);
+  const [signals, setSignals] = useState<DashboardSignal[]>([]);
   const [applications, setApplications] = useState(0);
-  const [reportingOpportunity, setReportingOpportunity] = useState<Opportunity | null>(null);
+  const [reportingOpportunity, setReportingOpportunity] = useState<DashboardOpportunity | null>(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [crawling, setCrawling] = useState(false);
 
   useEffect(() => {
@@ -47,6 +57,7 @@ export default function Dashboard() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      setError(null);
 
       const [oppRes, signalRes, appRes] = await Promise.all([
         fetch('/api/opportunities?limit=20&sort=relevance'),
@@ -56,13 +67,14 @@ export default function Dashboard() {
 
       if (oppRes.ok) {
         const oppData = await oppRes.json();
-        const normalized = (oppData.data || []).map((opp: any) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const normalized = (oppData.data || []).map((opp: any): DashboardOpportunity => ({
           ...opp,
           relevanceScore: Math.round((opp.relevance_score || 0.5) * 100),
           postedAt: opp.posted_at || opp.created_at,
           deadline: opp.deadline || null,
           tags: Array.isArray(opp.tags)
-            ? opp.tags.map((t: any) => typeof t === 'string' ? { name: t } : t)
+            ? opp.tags.map((t: unknown) => typeof t === 'string' ? { name: t } : t as { name: string; category?: string })
             : [],
         }));
         setOpportunities(normalized);
@@ -70,7 +82,8 @@ export default function Dashboard() {
 
       if (signalRes.ok) {
         const signalData = await signalRes.json();
-        const normalized = (signalData.data || []).map((sig: any) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const normalized = (signalData.data || []).map((sig: any): DashboardSignal => ({
           ...sig,
           mentionCount: sig.mention_count,
         }));
@@ -81,8 +94,9 @@ export default function Dashboard() {
         const appData = await appRes.json();
         setApplications(appData.total ?? (appData.data?.length || 0));
       }
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setLoading(false);
     }
@@ -107,7 +121,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleReportClick = (opportunity: Opportunity) => {
+  const handleReportClick = (opportunity: DashboardOpportunity) => {
     setReportingOpportunity(opportunity);
     setIsReportModalOpen(true);
   };
@@ -219,8 +233,22 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Error State */}
+        {!loading && error && (
+          <div className="bg-rose-50 border border-rose-200 rounded-xl p-8 text-center">
+            <p className="text-rose-600 font-semibold mb-2">⚠️ 오류 발생</p>
+            <p className="text-rose-500 text-sm mb-4">{error}</p>
+            <button
+              onClick={fetchData}
+              className="text-rose-600 hover:text-rose-700 font-semibold underline text-sm"
+            >
+              다시 시도
+            </button>
+          </div>
+        )}
+
         {/* Recent Opportunities */}
-        {!loading && (
+        {!loading && !error && (
           <div>
             {opportunities.length > 0 ? (
               <>
