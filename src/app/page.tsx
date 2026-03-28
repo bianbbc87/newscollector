@@ -5,7 +5,11 @@ import { TrendingUp, Briefcase, CheckCircle, Clock, RefreshCw } from 'lucide-rea
 import OpportunityCard from '@/components/OpportunityCard';
 import ReportModal from '@/components/ReportModal';
 
-interface Opportunity {
+// Dashboard view-model types.
+// These align with OpportunityCard's internal interface.
+// TODO: migrate OpportunityCard to use @/types/index.ts canonical types,
+// then remove these local definitions.
+interface DashboardOpportunity {
   id: string;
   title: string;
   organization: string;
@@ -21,7 +25,7 @@ interface Opportunity {
   postedAt?: string;
 }
 
-interface Signal {
+interface DashboardSignal {
   keyword: string;
   mention_count: number;
   mentionCount?: number;
@@ -37,10 +41,10 @@ interface StatCard {
 }
 
 export default function Dashboard() {
-  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
-  const [signals, setSignals] = useState<Signal[]>([]);
+  const [opportunities, setOpportunities] = useState<DashboardOpportunity[]>([]);
+  const [signals, setSignals] = useState<DashboardSignal[]>([]);
   const [applications, setApplications] = useState(0);
-  const [reportingOpportunity, setReportingOpportunity] = useState<Opportunity | null>(null);
+  const [reportingOpportunity, setReportingOpportunity] = useState<DashboardOpportunity | null>(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,13 +67,14 @@ export default function Dashboard() {
 
       if (oppRes.ok) {
         const oppData = await oppRes.json();
-        const normalized = (oppData.data || []).map((opp: any) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const normalized = (oppData.data || []).map((opp: any): DashboardOpportunity => ({
           ...opp,
           relevanceScore: Math.round((opp.relevance_score || 0.5) * 100),
           postedAt: opp.posted_at || opp.created_at,
           deadline: opp.deadline || null,
           tags: Array.isArray(opp.tags)
-            ? opp.tags.map((t: any) => typeof t === 'string' ? { name: t } : t)
+            ? opp.tags.map((t: unknown) => typeof t === 'string' ? { name: t } : t as { name: string; category?: string })
             : [],
         }));
         setOpportunities(normalized);
@@ -77,7 +82,8 @@ export default function Dashboard() {
 
       if (signalRes.ok) {
         const signalData = await signalRes.json();
-        const normalized = (signalData.data || []).map((sig: any) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const normalized = (signalData.data || []).map((sig: any): DashboardSignal => ({
           ...sig,
           mentionCount: sig.mention_count,
         }));
@@ -115,7 +121,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleReportClick = (opportunity: Opportunity) => {
+  const handleReportClick = (opportunity: DashboardOpportunity) => {
     setReportingOpportunity(opportunity);
     setIsReportModalOpen(true);
   };
